@@ -185,7 +185,7 @@ function Dashboard() {
                     </ul>
                     <div className="mt-4 flex flex-wrap gap-2">
                       <Button asChild>
-                        <Link to="/messages" search={{ peer: person.id }}>
+                        <Link to="/messages/$peer" params={{ peer: person.id }}>
                           <MessageCircle aria-hidden="true" className="size-4" /> Start conversation
                         </Link>
                       </Button>
@@ -314,8 +314,8 @@ function Dashboard() {
                 return (
                   <li key={c.id}>
                     <Link
-                      to="/messages"
-                      search={{ peer: person.id }}
+                      to="/messages/$peer"
+                      params={{ peer: person.id }}
                       className="focus-ring flex items-start gap-3 rounded-xl p-2 hover:bg-muted"
                     >
                       <img

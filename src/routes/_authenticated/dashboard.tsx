@@ -12,6 +12,7 @@ import {
   Users,
 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
+import { NetworkMap } from "@/components/network-map";
 import { TwinMeter } from "@/components/twin-intelligence";
 import { RecommendationCard } from "@/components/recommendation-card";
 import { Button } from "@/components/ui/button";

@@ -1,12 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
 import { motion } from "motion/react";
 import { Check, FileText, Github, Globe, Linkedin, RotateCcw, Sparkles } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
+import { ConnectSyncModal } from "@/components/connect-sync-modal";
 import { TwinIntelligencePanel } from "@/components/twin-intelligence";
 import { Button } from "@/components/ui/button";
 import { importSources, trainingSources } from "@/lib/demo-data";
+import { syncFlows, type SyncFlow } from "@/lib/sync-flows";
 import { useTwin } from "@/lib/twin-store";
 import { cn } from "@/lib/utils";
+
 
 export const Route = createFileRoute("/_authenticated/twin")({
   head: () => ({
@@ -38,6 +42,25 @@ const icons: Record<string, typeof Linkedin> = {
 
 function Twin() {
   const { state, intelligence, dimensions, connectSource, trainSource, reset } = useTwin();
+  const [activeFlow, setActiveFlow] = useState<SyncFlow | null>(null);
+  const [baseline, setBaseline] = useState(0);
+  const [pending, setPending] = useState<{ id: string; kind: "import" | "training" } | null>(null);
+
+  const startSync = (id: string, kind: "import" | "training") => {
+    const flow = syncFlows[id];
+    if (!flow) return;
+    setBaseline(intelligence);
+    setPending({ id, kind });
+    setActiveFlow(flow);
+  };
+
+  const commit = () => {
+    if (!pending) return;
+    if (pending.kind === "import") connectSource(pending.id);
+    else trainSource(pending.id);
+  };
+
+
 
   return (
     <AppShell>
@@ -96,12 +119,17 @@ function Twin() {
                 <p className="mt-1 text-sm text-muted-foreground">{source.subtitle}</p>
                 {done ? (
                   <p className="mt-3 text-sm italic text-primary">“{source.afterMessage}”</p>
-                ) : null}
+                ) : (
+                  <p className="mt-3 text-sm text-muted-foreground">
+                    Connecting {source.name} could improve matching by ~
+                    {Math.round(source.gain)}%. Never required — connect whenever you're ready.
+                  </p>
+                )}
                 <Button
                   className="mt-4 w-full"
                   variant={done ? "secondary" : "default"}
                   disabled={done}
-                  onClick={() => connectSource(source.id)}
+                  onClick={() => startSync(source.id, "import")}
                 >
                   {done ? (
                     <>
@@ -111,6 +139,7 @@ function Twin() {
                     `Connect ${source.name}`
                   )}
                 </Button>
+
               </motion.article>
             );
           })}
@@ -142,7 +171,7 @@ function Twin() {
                       className="mt-2"
                       variant={done ? "secondary" : "default"}
                       disabled={done}
-                      onClick={() => trainSource(source.id)}
+                      onClick={() => startSync(source.id, "training")}
                     >
                       {done ? (
                         <>
@@ -159,6 +188,18 @@ function Twin() {
           })}
         </div>
       </section>
+
+      <ConnectSyncModal
+        flow={activeFlow}
+        fromIntelligence={baseline}
+        toIntelligence={intelligence}
+        onCommit={commit}
+        onClose={() => {
+          setActiveFlow(null);
+          setPending(null);
+        }}
+      />
     </AppShell>
+
   );
 }

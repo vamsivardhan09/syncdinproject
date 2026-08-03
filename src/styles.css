@@ -130,7 +130,17 @@
       transparent 60%
     ),
     radial-gradient(900px 500px at 95% 0%, oklch(0.96 0.03 250 / 0.7), transparent 60%);
+  /* Deep, editorial brand surface used by the auth split screen. */
+  --gradient-brand-deep: radial-gradient(
+      120% 90% at 100% 0%,
+      oklch(0.42 0.19 292 / 0.9),
+      transparent 60%
+    ),
+    radial-gradient(90% 70% at 0% 100%, oklch(0.34 0.14 265 / 0.85), transparent 65%),
+    linear-gradient(160deg, oklch(0.24 0.08 285), oklch(0.17 0.05 282));
+  --grid-hairline: oklch(1 0 0 / 0.055);
 }
+
 
 .dark {
   --background: oklch(0.17 0.02 285);
@@ -195,9 +205,21 @@
   background: var(--gradient-brand);
 }
 
+@utility brand-deep-bg {
+  background: var(--gradient-brand-deep);
+}
+
+@utility brand-grid-overlay {
+  background-image: linear-gradient(to right, var(--grid-hairline) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--grid-hairline) 1px, transparent 1px);
+  background-size: 64px 64px;
+  mask-image: radial-gradient(80% 70% at 30% 20%, black, transparent 85%);
+}
+
 @utility canvas-glow {
   background-image: var(--gradient-canvas);
 }
+
 
 @utility focus-ring {
   outline: none;

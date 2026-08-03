@@ -13,10 +13,17 @@ import { Label } from "@/components/ui/label";
 type Pending = null | "google" | "magic" | "password";
 
 const proof = [
-  "12,400+ professionals have an AI Twin",
-  "Twins run 3.2M matches every week",
-  "Average time to first great match: 61 seconds",
+  "Twin-to-Twin screening before you ever say hello",
+  "Matches explained in plain language, never a black box",
+  "Enterprise-grade privacy — you approve every intro",
 ];
+
+const stats = [
+  { label: "Professionals", value: "12.4k" },
+  { label: "Matches / week", value: "3.2M" },
+  { label: "First match", value: "61s" },
+];
+
 
 /** Split-screen auth surface shared by /signin and /signup. */
 export function AuthPanel({ mode }: { mode: "signin" | "signup" }) {
@@ -100,33 +107,67 @@ export function AuthPanel({ mode }: { mode: "signin" | "signup" }) {
 
   return (
     <div className="grid min-h-screen lg:grid-cols-[1.05fr_1fr]">
-      <aside className="brand-gradient-bg relative hidden flex-col justify-between overflow-hidden p-12 text-primary-foreground lg:flex">
-        <BrandLogo className="text-xl [&_span]:text-primary-foreground" />
-        <div className="relative z-10 max-w-md">
-          <h2 className="text-4xl leading-tight font-extrabold">
-            Your AI Twin networks while you sleep.
+      <aside className="brand-deep-bg relative hidden flex-col justify-between overflow-hidden p-14 text-primary-foreground lg:flex">
+        <div aria-hidden="true" className="brand-grid-overlay absolute inset-0" />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -top-40 -left-24 size-[30rem] rounded-full bg-primary/25 blur-3xl"
+        />
+
+        <div className="relative z-10 flex items-center justify-between">
+          <BrandLogo className="text-xl [&_span]:text-primary-foreground" />
+          <span className="rounded-full border border-primary-foreground/20 px-3 py-1 text-[0.65rem] font-semibold tracking-[0.16em] uppercase text-primary-foreground/70">
+            Version 2
+          </span>
+        </div>
+
+        <div className="relative z-10 max-w-lg">
+          <p className="text-[0.68rem] font-semibold tracking-[0.2em] uppercase text-primary-foreground/55">
+            AI-native professional networking
+          </p>
+          <h2 className="mt-5 text-[2.6rem] leading-[1.08] font-semibold tracking-tight">
+            Your AI Twin networks
+            <br />
+            while you sleep.
           </h2>
-          <p className="mt-4 text-base/relaxed text-primary-foreground/80">
-            SyncdIn Twins talk to each other, filter the noise and only surface the people worth your
+          <p className="mt-5 max-w-md text-base/relaxed text-primary-foreground/70">
+            SyncdIn Twins talk to each other, filter the noise and surface only the people worth your
             time — with the reason attached.
           </p>
+
+          <dl className="mt-10 grid max-w-md grid-cols-3 gap-px overflow-hidden rounded-2xl border border-primary-foreground/12 bg-primary-foreground/[0.04]">
+            {stats.map((stat) => (
+              <div key={stat.label} className="bg-primary-foreground/[0.02] px-4 py-5">
+                <dt className="text-[0.62rem] font-medium tracking-[0.1em] uppercase text-primary-foreground/50">
+                  {stat.label}
+                </dt>
+                <dd className="mt-2 text-xl font-semibold tabular-nums">{stat.value}</dd>
+              </div>
+            ))}
+          </dl>
+
           <ul className="mt-8 space-y-3">
             {proof.map((line) => (
-              <li key={line} className="flex items-start gap-2.5 text-sm">
-                <Check aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
-                <span className="text-primary-foreground/90">{line}</span>
+              <li key={line} className="flex items-start gap-3 text-sm">
+                <span className="mt-0.5 flex size-4.5 shrink-0 items-center justify-center rounded-full bg-primary-foreground/12">
+                  <Check aria-hidden="true" className="size-3" />
+                </span>
+                <span className="text-primary-foreground/75">{line}</span>
               </li>
             ))}
           </ul>
         </div>
-        <p className="relative z-10 text-xs text-primary-foreground/70">
-          No cold outreach. No endless scrolling. Just introductions that make sense.
-        </p>
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute -right-24 -bottom-32 size-[28rem] rounded-full bg-primary-foreground/10 blur-3xl"
-        />
+
+        <div className="relative z-10 border-t border-primary-foreground/12 pt-6">
+          <p className="text-sm/relaxed text-primary-foreground/70">
+            “It replaced three hours of cold outreach a week. The intros actually make sense.”
+          </p>
+          <p className="mt-2 text-xs font-medium tracking-wide text-primary-foreground/45">
+            Priya Raman · Head of Talent, Northwind
+          </p>
+        </div>
       </aside>
+
 
       <main className="flex flex-col justify-center px-5 py-10 sm:px-10">
         <div className="mx-auto w-full max-w-md">

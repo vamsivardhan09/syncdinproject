@@ -171,7 +171,7 @@ function Twin() {
                       className="mt-2"
                       variant={done ? "secondary" : "default"}
                       disabled={done}
-                      onClick={() => trainSource(source.id)}
+                      onClick={() => startSync(source.id, "training")}
                     >
                       {done ? (
                         <>
@@ -188,6 +188,18 @@ function Twin() {
           })}
         </div>
       </section>
+
+      <ConnectSyncModal
+        flow={activeFlow}
+        fromIntelligence={baseline}
+        toIntelligence={intelligence}
+        onCommit={commit}
+        onClose={() => {
+          setActiveFlow(null);
+          setPending(null);
+        }}
+      />
     </AppShell>
+
   );
 }

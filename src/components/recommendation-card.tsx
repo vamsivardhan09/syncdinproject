@@ -138,7 +138,7 @@ export function RecommendationCard({
           )}
         </Button>
         <Button asChild variant="outline" className="flex-1">
-          <Link to="/messages" search={{ peer: person.id }}>
+          <Link to="/messages/$peer" params={{ peer: person.id }}>
             <MessageSquareQuote aria-hidden="true" className="size-4" /> Message
           </Link>
         </Button>

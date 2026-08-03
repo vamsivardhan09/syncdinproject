@@ -3,7 +3,10 @@ import { useEffect, useState, type ReactNode } from "react";
 import {
   LayoutDashboard,
   Users,
+  MessageSquare,
   BrainCircuit,
+  Settings,
+  UserRound,
   Sparkles,
   LogOut,
   Menu,
@@ -18,7 +21,10 @@ import { cn } from "@/lib/utils";
 const nav = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/network", label: "My Network", icon: Users },
+  { to: "/messages", label: "Messages", icon: MessageSquare },
   { to: "/twin", label: "My AI Twin", icon: BrainCircuit },
+  { to: "/profile", label: "Profile", icon: UserRound },
+  { to: "/settings", label: "Settings", icon: Settings },
 ] as const;
 
 export function AppShell({ children }: { children: ReactNode }) {
@@ -36,7 +42,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   async function signOut() {
     await supabase.auth.signOut();
-    navigate({ to: "/auth", replace: true });
+    navigate({ to: "/signin", replace: true });
   }
 
   const sidebar = (
@@ -76,7 +82,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           Each new source makes your twin a sharper negotiator.
         </p>
         <Button asChild size="sm" className="mt-3 w-full">
-          <Link to="/twin">Improve my Twin</Link>
+          <Link to="/onboarding">Improve my Twin</Link>
         </Button>
       </div>
 

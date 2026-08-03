@@ -37,6 +37,24 @@ function clamp(n: number) {
   return Math.max(0, Math.min(99, Math.round(n)));
 }
 
+/** Mirrors connected sources to the backend so progress survives a device change. */
+async function persistSource(sourceId: string, kind: string, gain: number) {
+  try {
+    const { supabase } = await import("@/integrations/supabase/client");
+    const { data } = await supabase.auth.getUser();
+    if (!data.user) return;
+    await supabase
+      .from("twin_sources")
+      .upsert(
+        { user_id: data.user.id, source_id: sourceId, kind, gain },
+        { onConflict: "user_id,source_id" },
+      );
+  } catch {
+    /* offline or signed out — local state still holds */
+  }
+}
+
+
 export function TwinProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<TwinState>(initialState);
   const [hydrated, setHydrated] = useState(false);
@@ -80,11 +98,13 @@ export function TwinProvider({ children }: { children: ReactNode }) {
     const has = (id: string) =>
       state.connectedSources.includes(id) || state.trainedSources.includes(id);
     const boost = {
-      career: (has("linkedin") ? 38 : 0) + (has("resume") ? 14 : 0),
-      projects: (has("github") ? 34 : 0) + (has("portfolio") ? 16 : 0),
-      communication: (has("claude") ? 32 : 0) + (has("chatgpt") ? 14 : 0),
-      goals: (has("linkedin") ? 22 : 0) + (has("chatgpt") ? 20 : 0) + (has("gemini") ? 12 : 0),
-      network: state.connectionsMade.length * 5 + (has("linkedin") ? 20 : 0),
+      career: (has("linkedin") ? 44 : 0) + (has("resume") ? 22 : 0),
+      projects: (has("github") ? 40 : 0) + (has("portfolio") ? 20 : 0) + (has("resume") ? 10 : 0),
+      skills: (has("github") ? 30 : 0) + (has("linkedin") ? 22 : 0) + (has("resume") ? 14 : 0),
+      communication: (has("claude") ? 40 : 0) + (has("chatgpt") ? 20 : 0) + (has("portfolio") ? 8 : 0),
+      goals: (has("linkedin") ? 24 : 0) + (has("chatgpt") ? 22 : 0) + (has("resume") ? 10 : 0),
+      learning: (has("gemini") ? 40 : 0) + (has("github") ? 14 : 0),
+      networking: state.connectionsMade.length * 6 + (has("linkedin") ? 22 : 0),
     } as Record<string, number>;
 
     return twinDimensions.map((dim) => ({
@@ -94,21 +114,30 @@ export function TwinProvider({ children }: { children: ReactNode }) {
     }));
   }, [state]);
 
-  const connectSource = useCallback((id: string) => {
-    setState((prev) =>
-      prev.connectedSources.includes(id)
-        ? prev
-        : { ...prev, connectedSources: [...prev.connectedSources, id] },
-    );
-  }, []);
+  const connectSource = useCallback(
+    (id: string) => {
+      setState((prev) =>
+        prev.connectedSources.includes(id)
+          ? prev
+          : { ...prev, connectedSources: [...prev.connectedSources, id] },
+      );
+      void persistSource(id, "import", gainFor(id));
+    },
+    [gainFor],
+  );
 
-  const trainSource = useCallback((id: string) => {
-    setState((prev) =>
-      prev.trainedSources.includes(id)
-        ? prev
-        : { ...prev, trainedSources: [...prev.trainedSources, id] },
-    );
-  }, []);
+  const trainSource = useCallback(
+    (id: string) => {
+      setState((prev) =>
+        prev.trainedSources.includes(id)
+          ? prev
+          : { ...prev, trainedSources: [...prev.trainedSources, id] },
+      );
+      void persistSource(id, "training", gainFor(id));
+    },
+    [gainFor],
+  );
+
 
   const toggleConnection = useCallback((id: string) => {
     setState((prev) => ({

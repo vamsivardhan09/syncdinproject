@@ -60,7 +60,7 @@ function Landing() {
       <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-6">
         <BrandLogo />
         <Button asChild variant="ghost">
-          <Link to="/auth">Sign in</Link>
+          <Link to="/signin">Sign in</Link>
         </Button>
       </header>
 
@@ -83,7 +83,7 @@ function Landing() {
           </p>
           <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Button asChild size="lg" className="h-12 px-7 text-base shadow-glow">
-              <Link to="/auth">
+              <Link to="/signup">
                 Build my AI Twin <ArrowRight aria-hidden="true" className="size-4" />
               </Link>
             </Button>

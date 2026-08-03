@@ -258,6 +258,34 @@ export const demoPeople: DemoPerson[] = [
     ],
     accent: "amber",
   }),
+  person({
+    id: "rahul-verma",
+    name: "Rahul Verma",
+    initials: "RV",
+    role: "Co-founder",
+    company: "Stackfern",
+    kind: "Founder",
+    location: "Bengaluru, IN",
+    match: 88,
+    bio: "Building developer infrastructure for AI-native teams. Looking for a technical co-founder to own the platform layer.",
+    aiSummary:
+      "Rahul's twin is searching for a co-founder with your exact platform and inference background.",
+    skills: ["Developer tools", "Distributed systems", "Fundraising"],
+    interests: ["AI-native infra", "Open source", "Founder communities"],
+    goals: ["Find a co-founder", "Launch private beta"],
+    projects: ["Stackfern Runtime"],
+    sharedGoals: ["Both want to build a company in AI infra"],
+    complementarySkills: ["He brings distribution, you bring the platform layer"],
+    suggestedCollaboration: "Explore a co-founder fit over a two-week build sprint.",
+    conversationStarter:
+      "Hi Rahul — our Twins matched on AI infra. You're looking for a technical co-founder and I'm exploring exactly that.",
+    reasons: [
+      "Seeking a co-founder in your domain",
+      "Shared AI infrastructure thesis",
+      "Compatible working style",
+    ],
+    accent: "violet",
+  }),
 ];
 
 export const importSources = [
@@ -340,12 +368,23 @@ export const trainingSources = [
 ] as const;
 
 export const twinDimensions = [
-  { key: "career", label: "Career knowledge", base: 40 },
-  { key: "projects", label: "Projects", base: 32 },
-  { key: "communication", label: "Communication", base: 20 },
-  { key: "goals", label: "Goals", base: 34 },
-  { key: "network", label: "Network context", base: 26 },
+  { key: "career", label: "Career", base: 22 },
+  { key: "projects", label: "Projects", base: 16 },
+  { key: "skills", label: "Skills", base: 18 },
+  { key: "communication", label: "Communication", base: 10 },
+  { key: "goals", label: "Goals", base: 20 },
+  { key: "learning", label: "Learning", base: 12 },
+  { key: "networking", label: "Networking", base: 14 },
 ] as const;
+
+/** Deterministic demo avatar. Swap for a real storage URL when profiles go live. */
+export function photoFor(id: string) {
+  return `https://i.pravatar.cc/240?u=${id}`;
+}
+
+export function personById(id: string) {
+  return demoPeople.find((p) => p.id === id);
+}
 
 export const firstRewardBreakdown = [
   { label: "Recruiters", count: 4 },

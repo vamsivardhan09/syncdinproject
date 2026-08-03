@@ -14,7 +14,219 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      connections: {
+        Row: {
+          created_at: string
+          id: string
+          peer_slug: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          peer_slug: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          peer_slug?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      demo_profiles: {
+        Row: {
+          accent: string
+          ai_summary: string
+          bio: string
+          company: string
+          complementary_skills: string[]
+          conversation_starter: string
+          created_at: string
+          goals: string[]
+          id: string
+          initials: string
+          interests: string[]
+          kind: string
+          location: string
+          match: number
+          name: string
+          photo_url: string
+          projects: string[]
+          reasons: string[]
+          role: string
+          shared_goals: string[]
+          skills: string[]
+          slug: string
+          suggested_collaboration: string
+        }
+        Insert: {
+          accent?: string
+          ai_summary: string
+          bio: string
+          company: string
+          complementary_skills?: string[]
+          conversation_starter: string
+          created_at?: string
+          goals?: string[]
+          id?: string
+          initials: string
+          interests?: string[]
+          kind: string
+          location: string
+          match?: number
+          name: string
+          photo_url: string
+          projects?: string[]
+          reasons?: string[]
+          role: string
+          shared_goals?: string[]
+          skills?: string[]
+          slug: string
+          suggested_collaboration: string
+        }
+        Update: {
+          accent?: string
+          ai_summary?: string
+          bio?: string
+          company?: string
+          complementary_skills?: string[]
+          conversation_starter?: string
+          created_at?: string
+          goals?: string[]
+          id?: string
+          initials?: string
+          interests?: string[]
+          kind?: string
+          location?: string
+          match?: number
+          name?: string
+          photo_url?: string
+          projects?: string[]
+          reasons?: string[]
+          role?: string
+          shared_goals?: string[]
+          skills?: string[]
+          slug?: string
+          suggested_collaboration?: string
+        }
+        Relationships: []
+      }
+      messages: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          peer_slug: string
+          sender: string
+          user_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: string
+          peer_slug: string
+          sender?: string
+          user_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          peer_slug?: string
+          sender?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      notifications: {
+        Row: {
+          body: string | null
+          created_at: string
+          id: string
+          read: boolean
+          title: string
+          user_id: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          read?: boolean
+          title: string
+          user_id: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          read?: boolean
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          full_name: string | null
+          headline: string | null
+          id: string
+          location: string | null
+          twin_intelligence: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          full_name?: string | null
+          headline?: string | null
+          id: string
+          location?: string | null
+          twin_intelligence?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          full_name?: string | null
+          headline?: string | null
+          id?: string
+          location?: string | null
+          twin_intelligence?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      twin_sources: {
+        Row: {
+          created_at: string
+          gain: number
+          id: string
+          kind: string
+          source_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          gain?: number
+          id?: string
+          kind?: string
+          source_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          gain?: number
+          id?: string
+          kind?: string
+          source_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

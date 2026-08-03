@@ -91,6 +91,15 @@ export function NetworkMap() {
             {visible.length} matches live in {new Set(visible.map((p) => p.location)).size} cities
             {me ? ` — signals routed to ${me.label}` : ""}.
           </p>
+          {!me ? (
+            <p className="mt-1 text-xs text-muted-foreground">
+              Add your location on your{" "}
+              <Link to="/profile" className="font-medium text-primary underline-offset-2 hover:underline">
+                profile
+              </Link>{" "}
+              (or allow location access) to see live routes from you to every match.
+            </p>
+          ) : null}
         </div>
         <ul className="flex flex-wrap gap-1.5">
           {kinds.map((k) => (
@@ -136,8 +145,9 @@ export function NetworkMap() {
           <path
             d={WORLD_PATH}
             fill="var(--card)"
-            stroke="var(--border)"
-            strokeWidth="0.6"
+            stroke="var(--primary)"
+            strokeOpacity="0.35"
+            strokeWidth="0.8"
             vectorEffect="non-scaling-stroke"
           />
 
@@ -190,9 +200,8 @@ export function NetworkMap() {
               <motion.circle
                 cx={p.x}
                 cy={p.y}
-                r="13"
                 fill={accentVar[p.accent]}
-                opacity={0.35}
+                initial={{ r: 13, opacity: 0.35 }}
                 animate={{ r: [13, 26, 13], opacity: [0.35, 0, 0.35] }}
                 transition={{
                   duration: 2.6,
@@ -231,9 +240,8 @@ export function NetworkMap() {
               <motion.circle
                 cx={me.x}
                 cy={me.y}
-                r="8"
                 fill="var(--primary)"
-                opacity={0.3}
+                initial={{ r: 8, opacity: 0.4 }}
                 animate={{ r: [8, 30, 8], opacity: [0.4, 0, 0.4] }}
                 transition={{ duration: 2.2, repeat: Infinity, ease: "easeOut" }}
               />

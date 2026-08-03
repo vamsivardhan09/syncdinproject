@@ -205,9 +205,21 @@
   background: var(--gradient-brand);
 }
 
+@utility brand-deep-bg {
+  background: var(--gradient-brand-deep);
+}
+
+@utility brand-grid-overlay {
+  background-image: linear-gradient(to right, var(--grid-hairline) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--grid-hairline) 1px, transparent 1px);
+  background-size: 64px 64px;
+  mask-image: radial-gradient(80% 70% at 30% 20%, black, transparent 85%);
+}
+
 @utility canvas-glow {
   background-image: var(--gradient-canvas);
 }
+
 
 @utility focus-ring {
   outline: none;

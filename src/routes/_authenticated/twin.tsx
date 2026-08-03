@@ -42,6 +42,25 @@ const icons: Record<string, typeof Linkedin> = {
 
 function Twin() {
   const { state, intelligence, dimensions, connectSource, trainSource, reset } = useTwin();
+  const [activeFlow, setActiveFlow] = useState<SyncFlow | null>(null);
+  const [baseline, setBaseline] = useState(0);
+  const [pending, setPending] = useState<{ id: string; kind: "import" | "training" } | null>(null);
+
+  const startSync = (id: string, kind: "import" | "training") => {
+    const flow = syncFlows[id];
+    if (!flow) return;
+    setBaseline(intelligence);
+    setPending({ id, kind });
+    setActiveFlow(flow);
+  };
+
+  const commit = () => {
+    if (!pending) return;
+    if (pending.kind === "import") connectSource(pending.id);
+    else trainSource(pending.id);
+  };
+
+
 
   return (
     <AppShell>

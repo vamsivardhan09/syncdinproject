@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { motion } from "motion/react";
 import { Check, ChevronDown, Sparkles, Handshake, MessageSquareQuote } from "lucide-react";
-import type { DemoPerson } from "@/lib/demo-data";
+import { Link } from "@tanstack/react-router";
+import { photoFor, type DemoPerson } from "@/lib/demo-data";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -35,19 +36,25 @@ export function RecommendationCard({
     >
       <header className="flex items-start gap-3">
         <span
-          aria-hidden="true"
           className={cn(
-            "flex size-11 shrink-0 items-center justify-center rounded-xl text-sm font-bold",
+            "relative flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-xl text-sm font-bold",
             accentRing[person.accent],
           )}
         >
-          {person.initials}
+          <span aria-hidden="true">{person.initials}</span>
+          <img
+            src={photoFor(person.id)}
+            alt={`${person.name}, ${person.role} at ${person.company}`}
+            loading="lazy"
+            className="absolute inset-0 size-full object-cover"
+          />
         </span>
         <div className="min-w-0 flex-1">
           <h3 className="truncate text-base font-bold">{person.name}</h3>
           <p className="truncate text-sm text-muted-foreground">
             {person.role} · {person.company}
           </p>
+          <p className="truncate text-xs text-muted-foreground">{person.location}</p>
         </div>
         <Badge variant="secondary" className="shrink-0 bg-primary-soft font-mono text-primary">
           {person.match}%
@@ -130,13 +137,18 @@ export function RecommendationCard({
             </>
           )}
         </Button>
+        <Button asChild variant="outline" className="flex-1">
+          <Link to="/messages" search={{ peer: person.id }}>
+            <MessageSquareQuote aria-hidden="true" className="size-4" /> Message
+          </Link>
+        </Button>
         <Button
           variant="outline"
           onClick={() => setOpen((v) => !v)}
           aria-expanded={open}
           className="flex-1"
         >
-          {open ? "Hide AI analysis" : "View AI analysis"}
+          {open ? "Hide analysis" : "AI analysis"}
           <ChevronDown
             aria-hidden="true"
             className={cn("size-4 transition-transform", open && "rotate-180")}

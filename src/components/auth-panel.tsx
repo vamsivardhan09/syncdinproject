@@ -13,10 +13,17 @@ import { Label } from "@/components/ui/label";
 type Pending = null | "google" | "magic" | "password";
 
 const proof = [
-  "12,400+ professionals have an AI Twin",
-  "Twins run 3.2M matches every week",
-  "Average time to first great match: 61 seconds",
+  "Twin-to-Twin screening before you ever say hello",
+  "Matches explained in plain language, never a black box",
+  "Enterprise-grade privacy — you approve every intro",
 ];
+
+const stats = [
+  { label: "Professionals", value: "12.4k" },
+  { label: "Matches / week", value: "3.2M" },
+  { label: "First match", value: "61s" },
+];
+
 
 /** Split-screen auth surface shared by /signin and /signup. */
 export function AuthPanel({ mode }: { mode: "signin" | "signup" }) {

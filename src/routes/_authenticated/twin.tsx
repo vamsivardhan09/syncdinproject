@@ -119,12 +119,17 @@ function Twin() {
                 <p className="mt-1 text-sm text-muted-foreground">{source.subtitle}</p>
                 {done ? (
                   <p className="mt-3 text-sm italic text-primary">“{source.afterMessage}”</p>
-                ) : null}
+                ) : (
+                  <p className="mt-3 text-sm text-muted-foreground">
+                    Connecting {source.name} could improve matching by ~
+                    {Math.round(source.gain)}%. Never required — connect whenever you're ready.
+                  </p>
+                )}
                 <Button
                   className="mt-4 w-full"
                   variant={done ? "secondary" : "default"}
                   disabled={done}
-                  onClick={() => connectSource(source.id)}
+                  onClick={() => startSync(source.id, "import")}
                 >
                   {done ? (
                     <>
@@ -134,6 +139,7 @@ function Twin() {
                     `Connect ${source.name}`
                   )}
                 </Button>
+
               </motion.article>
             );
           })}

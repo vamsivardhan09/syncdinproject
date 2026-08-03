@@ -1,12 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
 import { motion } from "motion/react";
 import { Check, FileText, Github, Globe, Linkedin, RotateCcw, Sparkles } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
+import { ConnectSyncModal } from "@/components/connect-sync-modal";
 import { TwinIntelligencePanel } from "@/components/twin-intelligence";
 import { Button } from "@/components/ui/button";
 import { importSources, trainingSources } from "@/lib/demo-data";
+import { syncFlows, type SyncFlow } from "@/lib/sync-flows";
 import { useTwin } from "@/lib/twin-store";
 import { cn } from "@/lib/utils";
+
 
 export const Route = createFileRoute("/_authenticated/twin")({
   head: () => ({

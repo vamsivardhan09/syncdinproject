@@ -1,0 +1,84 @@
+import { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
+import { personById } from "@/lib/demo-data";
+
+const ReplyInput = z.object({
+  /** Which twin is speaking: the matched person's twin, or the signed-in user's twin. */
+  speaker: z.enum(["peer", "user"]),
+  peerId: z.string().min(1),
+  userContext: z.object({
+    name: z.string().default("the user"),
+    headline: z.string().default(""),
+    location: z.string().default(""),
+    intelligence: z.number().default(0),
+    sources: z.array(z.string()).default([]),
+  }),
+  transcript: z
+    .array(z.object({ sender: z.enum(["user", "peer"]), body: z.string() }))
+    .max(40),
+});
+
+export const generateTwinReply = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => ReplyInput.parse(input))
+  .handler(async ({ data }) => {
+    const person = personById(data.peerId);
+    if (!person) throw new Error("Unknown match");
+
+    const key = process.env["LOVABLE_API_KEY"];
+    if (!key) throw new Error("AI is not configured");
+
+    const u = data.userContext;
+    const peerBrief = [
+      `Name: ${person.name}`,
+      `Role: ${person.role} at ${person.company} (${person.kind})`,
+      `Location: ${person.location}`,
+      `Bio: ${person.bio}`,
+      `Skills: ${person.skills.join(", ")}`,
+      `Interests: ${person.interests.join(", ")}`,
+      `Goals: ${person.goals.join(", ")}`,
+      `Projects: ${person.projects.join(", ")}`,
+      `Why matched: ${person.reasons.join("; ")}`,
+      `Suggested collaboration: ${person.suggestedCollaboration}`,
+    ].join("\n");
+
+    const userBrief = [
+      `Name: ${u.name || "the user"}`,
+      u.headline ? `Headline: ${u.headline}` : "Headline: not provided",
+      u.location ? `Location: ${u.location}` : "Location: not provided",
+      `Twin intelligence: ${u.intelligence}%`,
+      u.sources.length ? `Trained on: ${u.sources.join(", ")}` : "Trained on: no sources yet",
+    ].join("\n");
+
+    const system =
+      data.speaker === "peer"
+        ? `You are ${person.name}'s AI Twin on SyncdIn — an AI that networks on their behalf. Speak as ${person.name} in first person, warm, direct, professional. Use only the profile facts below; never invent employers or numbers. Reference the other person's context when it helps. Ask one useful question. 1-3 short sentences, no greetings after the first message, no emoji spam, no markdown.\n\nYOUR PROFILE:\n${peerBrief}\n\nTHE PERSON YOU ARE TALKING TO:\n${userBrief}`
+        : `You are the AI Twin of ${u.name || "the user"} on SyncdIn, networking on their behalf. Speak as them in first person, confident and concise. Use only the facts below; if something is unknown, keep it general instead of inventing it. Move the conversation toward a concrete next step. 1-3 short sentences, no markdown.\n\nYOUR PROFILE:\n${userBrief}\n\nTHE PERSON YOU ARE TALKING TO:\n${peerBrief}`;
+
+    const messages = [
+      { role: "system", content: system },
+      ...data.transcript.map((m) => ({
+        role:
+          (data.speaker === "peer" ? m.sender === "user" : m.sender === "peer")
+            ? "user"
+            : "assistant",
+        content: m.body,
+      })),
+    ];
+
+    const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Lovable-API-Key": key },
+      body: JSON.stringify({ model: "google/gemini-3.6-flash", messages }),
+    });
+
+    if (res.status === 429) throw new Error("Twin is rate limited — try again in a moment.");
+    if (res.status === 402) throw new Error("AI credits exhausted for this workspace.");
+    if (!res.ok) throw new Error(`Twin failed (${res.status})`);
+
+    const json = (await res.json()) as {
+      choices?: { message?: { content?: string } }[];
+    };
+    const text = json.choices?.[0]?.message?.content?.trim();
+    if (!text) throw new Error("Twin returned an empty reply");
+    return { text };
+  });

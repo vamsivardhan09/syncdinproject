@@ -165,8 +165,11 @@ function Conversation() {
   );
 
   const transcriptOf = useCallback(
-    (rows: Message[]) =>
-      rows.map((m) => ({ sender: m.sender === "user" ? "user" : ("peer" as const), body: m.body })),
+    (rows: Message[]): { sender: "user" | "peer"; body: string }[] =>
+      rows.map((m) => ({
+        sender: m.sender === "user" ? ("user" as const) : ("peer" as const),
+        body: m.body,
+      })),
     [],
   );
 

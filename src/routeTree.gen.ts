@@ -22,6 +22,7 @@ import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedTwinRouteImport } from './routes/_authenticated/twin'
 import { Route as AuthenticatedMessagesIndexRouteImport } from './routes/_authenticated/messages.index'
+import { Route as AuthenticatedMessagesPeerRouteImport } from './routes/_authenticated/messages.$peer'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -88,6 +89,12 @@ const AuthenticatedMessagesIndexRoute =
     path: '/',
     getParentRoute: () => AuthenticatedMessagesRoute,
   } as any)
+const AuthenticatedMessagesPeerRoute =
+  AuthenticatedMessagesPeerRouteImport.update({
+    id: '/$peer',
+    path: '/$peer',
+    getParentRoute: () => AuthenticatedMessagesRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -101,6 +108,7 @@ export interface FileRoutesByFullPath {
   '/profile': typeof AuthenticatedProfileRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/twin': typeof AuthenticatedTwinRoute
+  '/messages/$peer': typeof AuthenticatedMessagesPeerRoute
   '/messages/': typeof AuthenticatedMessagesIndexRoute
 }
 export interface FileRoutesByTo {
@@ -114,6 +122,7 @@ export interface FileRoutesByTo {
   '/profile': typeof AuthenticatedProfileRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/twin': typeof AuthenticatedTwinRoute
+  '/messages/$peer': typeof AuthenticatedMessagesPeerRoute
   '/messages': typeof AuthenticatedMessagesIndexRoute
 }
 export interface FileRoutesById {
@@ -130,6 +139,7 @@ export interface FileRoutesById {
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/twin': typeof AuthenticatedTwinRoute
+  '/_authenticated/messages/$peer': typeof AuthenticatedMessagesPeerRoute
   '/_authenticated/messages/': typeof AuthenticatedMessagesIndexRoute
 }
 export interface FileRouteTypes {
@@ -146,6 +156,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/settings'
     | '/twin'
+    | '/messages/$peer'
     | '/messages/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -159,6 +170,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/settings'
     | '/twin'
+    | '/messages/$peer'
     | '/messages'
   id:
     | '__root__'
@@ -174,6 +186,7 @@ export interface FileRouteTypes {
     | '/_authenticated/profile'
     | '/_authenticated/settings'
     | '/_authenticated/twin'
+    | '/_authenticated/messages/$peer'
     | '/_authenticated/messages/'
   fileRoutesById: FileRoutesById
 }
@@ -278,14 +291,23 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedMessagesIndexRouteImport
       parentRoute: typeof AuthenticatedMessagesRoute
     }
+    '/_authenticated/messages/$peer': {
+      id: '/_authenticated/messages/$peer'
+      path: '/$peer'
+      fullPath: '/messages/$peer'
+      preLoaderRoute: typeof AuthenticatedMessagesPeerRouteImport
+      parentRoute: typeof AuthenticatedMessagesRoute
+    }
   }
 }
 
 interface AuthenticatedMessagesRouteChildren {
+  AuthenticatedMessagesPeerRoute: typeof AuthenticatedMessagesPeerRoute
   AuthenticatedMessagesIndexRoute: typeof AuthenticatedMessagesIndexRoute
 }
 
 const AuthenticatedMessagesRouteChildren: AuthenticatedMessagesRouteChildren = {
+  AuthenticatedMessagesPeerRoute: AuthenticatedMessagesPeerRoute,
   AuthenticatedMessagesIndexRoute: AuthenticatedMessagesIndexRoute,
 }
 

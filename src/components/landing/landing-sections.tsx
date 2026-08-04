@@ -112,7 +112,7 @@ export function Hero() {
 }
 
 function HeroPreview() {
-  const [a, b] = demoPeople;
+  const preview = demoPeople.slice(0, 2);
   return (
     <motion.div
       initial={{ opacity: 0, y: 26, scale: 0.98 }}
@@ -159,7 +159,7 @@ function HeroPreview() {
             </div>
           </div>
 
-          {[a, b].map((p, i) => (
+          {preview.map((p, i) => (
             <motion.div
               key={p.id}
               initial={{ opacity: 0, x: 18 }}

@@ -47,7 +47,7 @@ function Landing() {
     <div className="min-h-screen bg-background">
       <LandingNav />
       <main>
-        <h1 className="sr-only">SyncdIn — your personal AI networking agent</h1>
+        
         <Hero />
         <StatsBand />
         <WhySection />

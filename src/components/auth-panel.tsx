@@ -6,6 +6,8 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 import { BrandLogo } from "@/components/brand-logo";
+import { AuthWorldMap } from "@/components/auth-world-map";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -88,16 +90,18 @@ export function AuthPanel({ mode }: { mode: "signin" | "signup" }) {
         <BrandLogo className="relative z-10 text-xl [&_span]:text-primary-foreground" />
 
         <div className="relative z-10">
-          <TwinOrbit />
-          <h2 className="mt-12 text-[2.1rem] leading-[1.12] font-semibold tracking-tight">
-            Networking,
+          <AuthWorldMap />
+          <h2 className="mt-10 text-[2.1rem] leading-[1.12] font-semibold tracking-tight">
+            Connected
             <br />
-            quietly automated.
+            across the world.
           </h2>
           <p className="mt-4 max-w-xs text-sm/relaxed text-primary-foreground/65">
-            Your AI Twin talks to other Twins and surfaces only the people worth your time.
+            Your AI Twin talks to Twins in every timezone and surfaces only the people worth your
+            time.
           </p>
         </div>
+
 
         <p className="relative z-10 text-xs text-primary-foreground/40">
           © {new Date().getFullYear()} SyncdIn
@@ -228,45 +232,6 @@ export function AuthPanel({ mode }: { mode: "signin" | "signup" }) {
           </p>
         </div>
       </main>
-    </div>
-  );
-}
-
-/** Subtle AI-network illustration: a Twin node with orbiting peers. */
-function TwinOrbit() {
-  const nodes = [0, 1, 2, 3, 4];
-  return (
-    <div aria-hidden="true" className="relative size-40">
-      <motion.div
-        className="absolute inset-0"
-        animate={{ rotate: 360 }}
-        transition={{ duration: 40, repeat: Infinity, ease: "linear" }}
-      >
-        <div className="absolute inset-0 rounded-full border border-primary-foreground/12" />
-        <div className="absolute inset-6 rounded-full border border-primary-foreground/10" />
-        {nodes.map((i) => {
-          const angle = (i / nodes.length) * Math.PI * 2;
-          const r = i % 2 === 0 ? 50 : 32;
-          return (
-            <motion.span
-              key={i}
-              className="absolute size-2 rounded-full bg-primary-foreground/70"
-              style={{
-                left: `calc(50% + ${Math.cos(angle) * r}px - 4px)`,
-                top: `calc(50% + ${Math.sin(angle) * r}px - 4px)`,
-              }}
-              animate={{ opacity: [0.35, 1, 0.35], scale: [0.9, 1.25, 0.9] }}
-              transition={{ duration: 3.2, repeat: Infinity, delay: i * 0.5 }}
-            />
-          );
-        })}
-      </motion.div>
-      <span className="absolute top-1/2 left-1/2 size-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary-foreground" />
-      <motion.span
-        className="absolute top-1/2 left-1/2 size-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary-foreground/40"
-        animate={{ scale: [1, 3.4], opacity: [0.5, 0] }}
-        transition={{ duration: 2.8, repeat: Infinity, ease: "easeOut" }}
-      />
     </div>
   );
 }

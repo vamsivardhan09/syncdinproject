@@ -1,7 +1,7 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { motion } from "motion/react";
-import { ArrowLeft, Check, Loader2, Mail, Sparkles } from "lucide-react";
+import { ArrowLeft, Check, Linkedin, Loader2, Mail, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-type Pending = null | "google" | "magic" | "password";
+type Pending = null | "google" | "linkedin" | "magic" | "password";
 
 const proof = [
   "Twin-to-Twin screening before you ever say hello",
@@ -257,6 +257,21 @@ export function AuthPanel({ mode }: { mode: "signin" | "signup" }) {
               )}
               Continue with Google
             </Button>
+
+            <Button
+              onClick={withLinkedIn}
+              variant="outline"
+              className="mt-3 h-12 w-full text-base font-semibold"
+              disabled={pending !== null}
+            >
+              {pending === "linkedin" ? (
+                <Loader2 aria-hidden="true" className="size-4 animate-spin" />
+              ) : (
+                <Linkedin aria-hidden="true" className="size-4 text-[#0a66c2]" />
+              )}
+              Continue with LinkedIn
+            </Button>
+
 
             <Divider>or use a magic link</Divider>
 

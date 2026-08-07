@@ -4,6 +4,8 @@ AI-powered networking platform that builds a personal "Twin" to discover, qualif
 
 Built using **TanStack Start** (React full-stack framework), **TypeScript**, **Supabase**, **PostgreSQL** and **Framer Motion**. The architecture is compatible with a modern React full-stack workflow while focusing on rapid product iteration.
 
+**Live URL:** https://syncdin.lovable.app
+
 ---
 
 ## Features
@@ -125,6 +127,8 @@ public/             # Static assets
 ## Deployment
 
 This project is designed to deploy through Lovable. Connect the project to GitHub via **Plus (+) → GitHub → Connect project** in the Lovable editor, then publish from the top-right publish button.
+
+The public live URL is **https://syncdin.lovable.app**.
 
 For self-hosting, build the output with `bun run build` and deploy the generated assets to any platform that supports Vite / Node / edge runtimes.
 

@@ -52,17 +52,33 @@ const icons: Record<string, typeof Linkedin> = {
   portfolio: Globe,
 };
 
+type AnalysisRun = () => Promise<{ discovered: string[]; summary?: string }>;
+
+function readAsDataUrl(file: File) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(new Error("Could not read that file"));
+    reader.readAsDataURL(file);
+  });
+}
+
 function Twin() {
   const { state, intelligence, dimensions, connectSource, trainSource, reset } = useTwin();
   const [activeFlow, setActiveFlow] = useState<SyncFlow | null>(null);
   const [baseline, setBaseline] = useState(0);
   const [pending, setPending] = useState<{ id: string; kind: "import" | "training" } | null>(null);
+  const [run, setRun] = useState<AnalysisRun | null>(null);
+  const [portfolioOpen, setPortfolioOpen] = useState(false);
+  const [portfolioUrl, setPortfolioUrl] = useState("");
+  const fileInput = useRef<HTMLInputElement>(null);
 
-  const startSync = (id: string, kind: "import" | "training") => {
+  const startSync = (id: string, kind: "import" | "training", analysis: AnalysisRun | null = null) => {
     const flow = syncFlows[id];
     if (!flow) return;
     setBaseline(intelligence);
     setPending({ id, kind });
+    setRun(analysis ? () => analysis : null);
     setActiveFlow(flow);
   };
 
@@ -70,6 +86,54 @@ function Twin() {
     if (!pending) return;
     if (pending.kind === "import") connectSource(pending.id);
     else trainSource(pending.id);
+  };
+
+  const handleResumeFile = async (file: File) => {
+    if (file.size > 12 * 1024 * 1024) {
+      toast.error("Please upload a file under 12MB.");
+      return;
+    }
+    let fileData: string;
+    try {
+      fileData = await readAsDataUrl(file);
+    } catch {
+      toast.error("Could not read that file.");
+      return;
+    }
+    startSync("resume", "import", async () => {
+      const result = await analyzeResume({
+        data: {
+          filename: file.name,
+          mimeType: file.type || "application/pdf",
+          fileData,
+        },
+      });
+      return {
+        summary: result.summary,
+        discovered: [`${Math.round(result.strengthPct)}% résumé signal`, ...result.discovered],
+      };
+    });
+  };
+
+  const submitPortfolio = () => {
+    const url = portfolioUrl.trim().startsWith("http")
+      ? portfolioUrl.trim()
+      : `https://${portfolioUrl.trim()}`;
+    try {
+      new URL(url);
+    } catch {
+      toast.error("That doesn't look like a valid URL.");
+      return;
+    }
+    setPortfolioOpen(false);
+    setPortfolioUrl("");
+    startSync("portfolio", "import", async () => {
+      const result = await analyzePortfolio({ data: { url } });
+      return {
+        summary: result.summary,
+        discovered: [`${Math.round(result.strengthPct)}% portfolio signal`, ...result.discovered],
+      };
+    });
   };
 
 

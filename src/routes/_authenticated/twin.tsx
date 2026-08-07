@@ -193,6 +193,16 @@ function Twin() {
                 <p className="mt-1 text-sm text-muted-foreground">{source.subtitle}</p>
                 {done ? (
                   <p className="mt-3 text-sm italic text-primary">“{source.afterMessage}”</p>
+                ) : source.id === "resume" ? (
+                  <p className="mt-3 text-sm text-muted-foreground">
+                    Upload a PDF, DOC or text résumé. Your Twin scans it and extracts your
+                    experience, projects, skills and certifications.
+                  </p>
+                ) : source.id === "portfolio" ? (
+                  <p className="mt-3 text-sm text-muted-foreground">
+                    Paste your live site or portfolio URL. Your Twin reads it and scores how much
+                    signal it adds.
+                  </p>
                 ) : (
                   <p className="mt-3 text-sm text-muted-foreground">
                     Connecting {source.name} could improve matching by ~
@@ -203,11 +213,23 @@ function Twin() {
                   className="mt-4 w-full"
                   variant={done ? "secondary" : "default"}
                   disabled={done}
-                  onClick={() => startSync(source.id, "import")}
+                  onClick={() => {
+                    if (source.id === "resume") fileInput.current?.click();
+                    else if (source.id === "portfolio") setPortfolioOpen(true);
+                    else startSync(source.id, "import");
+                  }}
                 >
                   {done ? (
                     <>
                       <Check aria-hidden="true" className="size-4" /> Connected
+                    </>
+                  ) : source.id === "resume" ? (
+                    <>
+                      <Upload aria-hidden="true" className="size-4" /> Upload résumé
+                    </>
+                  ) : source.id === "portfolio" ? (
+                    <>
+                      <Link2 aria-hidden="true" className="size-4" /> Add live demo link
                     </>
                   ) : (
                     `Connect ${source.name}`

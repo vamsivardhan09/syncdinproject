@@ -236,45 +236,6 @@ export function AuthPanel({ mode }: { mode: "signin" | "signup" }) {
   );
 }
 
-/** Subtle AI-network illustration: a Twin node with orbiting peers. */
-function TwinOrbit() {
-  const nodes = [0, 1, 2, 3, 4];
-  return (
-    <div aria-hidden="true" className="relative size-40">
-      <motion.div
-        className="absolute inset-0"
-        animate={{ rotate: 360 }}
-        transition={{ duration: 40, repeat: Infinity, ease: "linear" }}
-      >
-        <div className="absolute inset-0 rounded-full border border-primary-foreground/12" />
-        <div className="absolute inset-6 rounded-full border border-primary-foreground/10" />
-        {nodes.map((i) => {
-          const angle = (i / nodes.length) * Math.PI * 2;
-          const r = i % 2 === 0 ? 50 : 32;
-          return (
-            <motion.span
-              key={i}
-              className="absolute size-2 rounded-full bg-primary-foreground/70"
-              style={{
-                left: `calc(50% + ${Math.cos(angle) * r}px - 4px)`,
-                top: `calc(50% + ${Math.sin(angle) * r}px - 4px)`,
-              }}
-              animate={{ opacity: [0.35, 1, 0.35], scale: [0.9, 1.25, 0.9] }}
-              transition={{ duration: 3.2, repeat: Infinity, delay: i * 0.5 }}
-            />
-          );
-        })}
-      </motion.div>
-      <span className="absolute top-1/2 left-1/2 size-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary-foreground" />
-      <motion.span
-        className="absolute top-1/2 left-1/2 size-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary-foreground/40"
-        animate={{ scale: [1, 3.4], opacity: [0.5, 0] }}
-        transition={{ duration: 2.8, repeat: Infinity, ease: "easeOut" }}
-      />
-    </div>
-  );
-}
-
 function GoogleMark() {
   return (
     <svg aria-hidden="true" viewBox="0 0 18 18" className="size-4">

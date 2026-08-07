@@ -44,6 +44,53 @@ export function AuthPanel({ mode }: { mode: "signin" | "signup" }) {
     return () => sub.subscription.unsubscribe();
   }, [navigate]);
 
+  // Surface failures bounced back from the LinkedIn callback.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const error = params.get("linkedin_error");
+    if (!error) return;
+    toast.error(error);
+    params.delete("linkedin_error");
+    const rest = params.toString();
+    window.history.replaceState({}, "", window.location.pathname + (rest ? `?${rest}` : ""));
+  }, []);
+
+  // The LinkedIn popup signs in on this origin, then tells us to pick up the session.
+  useEffect(() => {
+    function onMessage(event: MessageEvent) {
+      if (event.origin !== window.location.origin) return;
+      if ((event.data as { type?: string } | null)?.type !== "syncdinLinkedInSignedIn") return;
+      void supabase.auth.getSession().then(({ data }) => {
+        setPending(null);
+        if (data.session) navigate({ to: "/dashboard", replace: true });
+      });
+    }
+    window.addEventListener("message", onMessage);
+    return () => window.removeEventListener("message", onMessage);
+  }, [navigate]);
+
+  function withLinkedIn() {
+    const popup = window.open(
+      "/api/public/auth/linkedin/start",
+      "syncdin-linkedin",
+      "width=600,height=760",
+    );
+    if (!popup) {
+      toast.error("Allow popups to continue with LinkedIn.");
+      return;
+    }
+    setPending("linkedin");
+    const poll = window.setInterval(() => {
+      if (!popup.closed) return;
+      window.clearInterval(poll);
+      void supabase.auth.getSession().then(({ data }) => {
+        setPending(null);
+        if (data.session) navigate({ to: "/dashboard", replace: true });
+      });
+    }, 500);
+  }
+
+
   async function withGoogle() {
     setPending("google");
     const result = await lovable.auth.signInWithOAuth("google", {

@@ -23,6 +23,9 @@ import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedTwinRouteImport } from './routes/_authenticated/twin'
 import { Route as AuthenticatedMessagesIndexRouteImport } from './routes/_authenticated/messages.index'
 import { Route as AuthenticatedMessagesPeerRouteImport } from './routes/_authenticated/messages.$peer'
+import { Route as AuthLinkedinCompleteRouteImport } from './routes/auth.linkedin.complete'
+import { Route as ApiPublicAuthLinkedinCallbackRouteImport } from './routes/api/public/auth/linkedin/callback'
+import { Route as ApiPublicAuthLinkedinStartRouteImport } from './routes/api/public/auth/linkedin/start'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -95,10 +98,27 @@ const AuthenticatedMessagesPeerRoute =
     path: '/$peer',
     getParentRoute: () => AuthenticatedMessagesRoute,
   } as any)
+const AuthLinkedinCompleteRoute = AuthLinkedinCompleteRouteImport.update({
+  id: '/linkedin/complete',
+  path: '/linkedin/complete',
+  getParentRoute: () => AuthRoute,
+} as any)
+const ApiPublicAuthLinkedinCallbackRoute =
+  ApiPublicAuthLinkedinCallbackRouteImport.update({
+    id: '/api/public/auth/linkedin/callback',
+    path: '/api/public/auth/linkedin/callback',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicAuthLinkedinStartRoute =
+  ApiPublicAuthLinkedinStartRouteImport.update({
+    id: '/api/public/auth/linkedin/start',
+    path: '/api/public/auth/linkedin/start',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/auth': typeof AuthRoute
+  '/auth': typeof AuthRouteWithChildren
   '/signin': typeof SigninRoute
   '/signup': typeof SignupRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
@@ -109,11 +129,14 @@ export interface FileRoutesByFullPath {
   '/settings': typeof AuthenticatedSettingsRoute
   '/twin': typeof AuthenticatedTwinRoute
   '/messages/$peer': typeof AuthenticatedMessagesPeerRoute
+  '/auth/linkedin/complete': typeof AuthLinkedinCompleteRoute
   '/messages/': typeof AuthenticatedMessagesIndexRoute
+  '/api/public/auth/linkedin/callback': typeof ApiPublicAuthLinkedinCallbackRoute
+  '/api/public/auth/linkedin/start': typeof ApiPublicAuthLinkedinStartRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/auth': typeof AuthRoute
+  '/auth': typeof AuthRouteWithChildren
   '/signin': typeof SigninRoute
   '/signup': typeof SignupRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
@@ -123,13 +146,16 @@ export interface FileRoutesByTo {
   '/settings': typeof AuthenticatedSettingsRoute
   '/twin': typeof AuthenticatedTwinRoute
   '/messages/$peer': typeof AuthenticatedMessagesPeerRoute
+  '/auth/linkedin/complete': typeof AuthLinkedinCompleteRoute
   '/messages': typeof AuthenticatedMessagesIndexRoute
+  '/api/public/auth/linkedin/callback': typeof ApiPublicAuthLinkedinCallbackRoute
+  '/api/public/auth/linkedin/start': typeof ApiPublicAuthLinkedinStartRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
-  '/auth': typeof AuthRoute
+  '/auth': typeof AuthRouteWithChildren
   '/signin': typeof SigninRoute
   '/signup': typeof SignupRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
@@ -140,7 +166,10 @@ export interface FileRoutesById {
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/twin': typeof AuthenticatedTwinRoute
   '/_authenticated/messages/$peer': typeof AuthenticatedMessagesPeerRoute
+  '/auth/linkedin/complete': typeof AuthLinkedinCompleteRoute
   '/_authenticated/messages/': typeof AuthenticatedMessagesIndexRoute
+  '/api/public/auth/linkedin/callback': typeof ApiPublicAuthLinkedinCallbackRoute
+  '/api/public/auth/linkedin/start': typeof ApiPublicAuthLinkedinStartRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -157,7 +186,10 @@ export interface FileRouteTypes {
     | '/settings'
     | '/twin'
     | '/messages/$peer'
+    | '/auth/linkedin/complete'
     | '/messages/'
+    | '/api/public/auth/linkedin/callback'
+    | '/api/public/auth/linkedin/start'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -171,7 +203,10 @@ export interface FileRouteTypes {
     | '/settings'
     | '/twin'
     | '/messages/$peer'
+    | '/auth/linkedin/complete'
     | '/messages'
+    | '/api/public/auth/linkedin/callback'
+    | '/api/public/auth/linkedin/start'
   id:
     | '__root__'
     | '/'
@@ -187,15 +222,20 @@ export interface FileRouteTypes {
     | '/_authenticated/settings'
     | '/_authenticated/twin'
     | '/_authenticated/messages/$peer'
+    | '/auth/linkedin/complete'
     | '/_authenticated/messages/'
+    | '/api/public/auth/linkedin/callback'
+    | '/api/public/auth/linkedin/start'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
-  AuthRoute: typeof AuthRoute
+  AuthRoute: typeof AuthRouteWithChildren
   SigninRoute: typeof SigninRoute
   SignupRoute: typeof SignupRoute
+  ApiPublicAuthLinkedinCallbackRoute: typeof ApiPublicAuthLinkedinCallbackRoute
+  ApiPublicAuthLinkedinStartRoute: typeof ApiPublicAuthLinkedinStartRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -298,6 +338,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedMessagesPeerRouteImport
       parentRoute: typeof AuthenticatedMessagesRoute
     }
+    '/auth/linkedin/complete': {
+      id: '/auth/linkedin/complete'
+      path: '/linkedin/complete'
+      fullPath: '/auth/linkedin/complete'
+      preLoaderRoute: typeof AuthLinkedinCompleteRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/api/public/auth/linkedin/callback': {
+      id: '/api/public/auth/linkedin/callback'
+      path: '/api/public/auth/linkedin/callback'
+      fullPath: '/api/public/auth/linkedin/callback'
+      preLoaderRoute: typeof ApiPublicAuthLinkedinCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/auth/linkedin/start': {
+      id: '/api/public/auth/linkedin/start'
+      path: '/api/public/auth/linkedin/start'
+      fullPath: '/api/public/auth/linkedin/start'
+      preLoaderRoute: typeof ApiPublicAuthLinkedinStartRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -339,12 +400,24 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
 const AuthenticatedRouteRouteWithChildren =
   AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
 
+interface AuthRouteChildren {
+  AuthLinkedinCompleteRoute: typeof AuthLinkedinCompleteRoute
+}
+
+const AuthRouteChildren: AuthRouteChildren = {
+  AuthLinkedinCompleteRoute: AuthLinkedinCompleteRoute,
+}
+
+const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
-  AuthRoute: AuthRoute,
+  AuthRoute: AuthRouteWithChildren,
   SigninRoute: SigninRoute,
   SignupRoute: SignupRoute,
+  ApiPublicAuthLinkedinCallbackRoute: ApiPublicAuthLinkedinCallbackRoute,
+  ApiPublicAuthLinkedinStartRoute: ApiPublicAuthLinkedinStartRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

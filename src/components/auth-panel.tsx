@@ -1,7 +1,7 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { motion } from "motion/react";
-import { ArrowLeft, Check, Loader2, Mail, Sparkles } from "lucide-react";
+import { ArrowLeft, Check, Linkedin, Loader2, Mail, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-type Pending = null | "google" | "magic" | "password";
+type Pending = null | "google" | "linkedin" | "magic" | "password";
 
 const proof = [
   "Twin-to-Twin screening before you ever say hello",
@@ -43,6 +43,53 @@ export function AuthPanel({ mode }: { mode: "signin" | "signup" }) {
     });
     return () => sub.subscription.unsubscribe();
   }, [navigate]);
+
+  // Surface failures bounced back from the LinkedIn callback.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const error = params.get("linkedin_error");
+    if (!error) return;
+    toast.error(error);
+    params.delete("linkedin_error");
+    const rest = params.toString();
+    window.history.replaceState({}, "", window.location.pathname + (rest ? `?${rest}` : ""));
+  }, []);
+
+  // The LinkedIn popup signs in on this origin, then tells us to pick up the session.
+  useEffect(() => {
+    function onMessage(event: MessageEvent) {
+      if (event.origin !== window.location.origin) return;
+      if ((event.data as { type?: string } | null)?.type !== "syncdinLinkedInSignedIn") return;
+      void supabase.auth.getSession().then(({ data }) => {
+        setPending(null);
+        if (data.session) navigate({ to: "/dashboard", replace: true });
+      });
+    }
+    window.addEventListener("message", onMessage);
+    return () => window.removeEventListener("message", onMessage);
+  }, [navigate]);
+
+  function withLinkedIn() {
+    const popup = window.open(
+      "/api/public/auth/linkedin/start",
+      "syncdin-linkedin",
+      "width=600,height=760",
+    );
+    if (!popup) {
+      toast.error("Allow popups to continue with LinkedIn.");
+      return;
+    }
+    setPending("linkedin");
+    const poll = window.setInterval(() => {
+      if (!popup.closed) return;
+      window.clearInterval(poll);
+      void supabase.auth.getSession().then(({ data }) => {
+        setPending(null);
+        if (data.session) navigate({ to: "/dashboard", replace: true });
+      });
+    }, 500);
+  }
+
 
   async function withGoogle() {
     setPending("google");
@@ -210,6 +257,21 @@ export function AuthPanel({ mode }: { mode: "signin" | "signup" }) {
               )}
               Continue with Google
             </Button>
+
+            <Button
+              onClick={withLinkedIn}
+              variant="outline"
+              className="mt-3 h-12 w-full text-base font-semibold"
+              disabled={pending !== null}
+            >
+              {pending === "linkedin" ? (
+                <Loader2 aria-hidden="true" className="size-4 animate-spin" />
+              ) : (
+                <Linkedin aria-hidden="true" className="size-4 text-[#0a66c2]" />
+              )}
+              Continue with LinkedIn
+            </Button>
+
 
             <Divider>or use a magic link</Divider>
 

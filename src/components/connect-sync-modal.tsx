@@ -203,10 +203,12 @@ export function ConnectSyncModal({
                   <PartyPopper aria-hidden="true" className="size-5 text-primary" />
                   {flow.rewardTitle}
                 </DialogTitle>
-                <p className="mt-1 text-sm text-muted-foreground">Your AI discovered:</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {result?.summary ?? "Your AI discovered:"}
+                </p>
 
                 <ul className="mt-4 grid gap-2 sm:grid-cols-2">
-                  {flow.discovered.map((item, i) => (
+                  {discovered.map((item, i) => (
                     <motion.li
                       key={item}
                       initial={{ opacity: 0, y: 8 }}

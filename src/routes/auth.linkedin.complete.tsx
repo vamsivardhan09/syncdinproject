@@ -38,11 +38,17 @@ function LinkedInComplete() {
         const { data } = await supabase.auth.getSession();
         if (cancelled) return;
         if (data.session) {
+          if (window.opener) {
+            window.opener.postMessage({ type: "syncdinLinkedInSignedIn" }, window.location.origin);
+            window.close();
+            return;
+          }
           navigate({ to: "/dashboard", replace: true });
           return;
         }
         await new Promise((resolve) => setTimeout(resolve, 250));
       }
+
       if (!cancelled) {
         setMessage("That sign-in link expired. Please try LinkedIn again.");
         navigate({ to: "/signin", replace: true });

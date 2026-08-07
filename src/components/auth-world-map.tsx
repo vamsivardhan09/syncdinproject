@@ -37,9 +37,16 @@ const ARCS = LINKS.flatMap(([i, j]) => {
 /** Global AI-network illustration for the auth left panel. */
 export function AuthWorldMap() {
   return (
-    <div aria-hidden="true" className="relative w-full max-w-md">
+    <div
+      aria-hidden="true"
+      className="relative w-full max-w-md"
+      style={{
+        maskImage:
+          "radial-gradient(120% 110% at 40% 45%, black 55%, color-mix(in oklab, black 35%, transparent) 78%, transparent 100%)",
+      }}
+    >
       <svg
-        viewBox={`60 90 880 330`}
+        viewBox={`70 100 860 300`}
         className="w-full"
         style={{ overflow: "visible" }}
         role="presentation"

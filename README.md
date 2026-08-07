@@ -128,6 +128,8 @@ public/             # Static assets
 
 This project is designed to deploy through Lovable. Connect the project to GitHub via **Plus (+) → GitHub → Connect project** in the Lovable editor, then publish from the top-right publish button.
 
+The public live URL is **https://syncdin.lovable.app**.
+
 For self-hosting, build the output with `bun run build` and deploy the generated assets to any platform that supports Vite / Node / edge runtimes.
 
 ---

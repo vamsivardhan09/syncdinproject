@@ -252,8 +252,7 @@ export function AuthPanel({ mode }: { mode: "signin" | "signup" }) {
             >
               {pending === "google" ? (
                 <Loader2 aria-hidden="true" className="size-4 animate-spin" />
-              ) : (
-                )}
+              ) : null}
               Continue with Google
             </Button>
 

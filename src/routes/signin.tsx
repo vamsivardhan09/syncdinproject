@@ -8,7 +8,7 @@ export const Route = createFileRoute("/signin")({
       {
         name: "description",
         content:
-          "Sign in to SyncdIn with Google, a magic link or email and password to review the matches your AI Twin surfaced.",
+          "Sign in to SyncdIn with Google or your email and password to review the matches your AI Twin surfaced.",
       },
       { property: "og:title", content: "Sign in to SyncdIn" },
       {

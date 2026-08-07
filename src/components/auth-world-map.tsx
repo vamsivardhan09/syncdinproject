@@ -41,6 +41,8 @@ export function AuthWorldMap() {
       aria-hidden="true"
       className="relative w-full max-w-md"
       style={{
+        WebkitMaskImage:
+          "radial-gradient(120% 110% at 40% 45%, black 55%, rgba(0,0,0,0.35) 78%, transparent 100%)",
         maskImage:
           "radial-gradient(120% 110% at 40% 45%, black 55%, color-mix(in oklab, black 35%, transparent) 78%, transparent 100%)",
       }}

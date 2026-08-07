@@ -1,13 +1,25 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { motion } from "motion/react";
-import { Check, FileText, Github, Globe, Linkedin, RotateCcw, Sparkles } from "lucide-react";
+import { Check, FileText, Github, Globe, Link2, Linkedin, RotateCcw, Upload } from "lucide-react";
+import { toast } from "sonner";
 import { AppShell } from "@/components/app-shell";
 import { ConnectSyncModal } from "@/components/connect-sync-modal";
 import { TwinIntelligencePanel } from "@/components/twin-intelligence";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { importSources, trainingSources } from "@/lib/demo-data";
 import { syncFlows, type SyncFlow } from "@/lib/sync-flows";
+import { analyzePortfolio, analyzeResume } from "@/lib/twin-analyze.functions";
 import { useTwin } from "@/lib/twin-store";
 import { cn } from "@/lib/utils";
 
@@ -40,17 +52,33 @@ const icons: Record<string, typeof Linkedin> = {
   portfolio: Globe,
 };
 
+type AnalysisRun = () => Promise<{ discovered: string[]; summary?: string }>;
+
+function readAsDataUrl(file: File) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(new Error("Could not read that file"));
+    reader.readAsDataURL(file);
+  });
+}
+
 function Twin() {
   const { state, intelligence, dimensions, connectSource, trainSource, reset } = useTwin();
   const [activeFlow, setActiveFlow] = useState<SyncFlow | null>(null);
   const [baseline, setBaseline] = useState(0);
   const [pending, setPending] = useState<{ id: string; kind: "import" | "training" } | null>(null);
+  const [run, setRun] = useState<AnalysisRun | null>(null);
+  const [portfolioOpen, setPortfolioOpen] = useState(false);
+  const [portfolioUrl, setPortfolioUrl] = useState("");
+  const fileInput = useRef<HTMLInputElement>(null);
 
-  const startSync = (id: string, kind: "import" | "training") => {
+  const startSync = (id: string, kind: "import" | "training", analysis: AnalysisRun | null = null) => {
     const flow = syncFlows[id];
     if (!flow) return;
     setBaseline(intelligence);
     setPending({ id, kind });
+    setRun(analysis ? () => analysis : null);
     setActiveFlow(flow);
   };
 
@@ -58,6 +86,54 @@ function Twin() {
     if (!pending) return;
     if (pending.kind === "import") connectSource(pending.id);
     else trainSource(pending.id);
+  };
+
+  const handleResumeFile = async (file: File) => {
+    if (file.size > 12 * 1024 * 1024) {
+      toast.error("Please upload a file under 12MB.");
+      return;
+    }
+    let fileData: string;
+    try {
+      fileData = await readAsDataUrl(file);
+    } catch {
+      toast.error("Could not read that file.");
+      return;
+    }
+    startSync("resume", "import", async () => {
+      const result = await analyzeResume({
+        data: {
+          filename: file.name,
+          mimeType: file.type || "application/pdf",
+          fileData,
+        },
+      });
+      return {
+        summary: result.summary,
+        discovered: [`${Math.round(result.strengthPct)}% résumé signal`, ...result.discovered],
+      };
+    });
+  };
+
+  const submitPortfolio = () => {
+    const url = portfolioUrl.trim().startsWith("http")
+      ? portfolioUrl.trim()
+      : `https://${portfolioUrl.trim()}`;
+    try {
+      new URL(url);
+    } catch {
+      toast.error("That doesn't look like a valid URL.");
+      return;
+    }
+    setPortfolioOpen(false);
+    setPortfolioUrl("");
+    startSync("portfolio", "import", async () => {
+      const result = await analyzePortfolio({ data: { url } });
+      return {
+        summary: result.summary,
+        discovered: [`${Math.round(result.strengthPct)}% portfolio signal`, ...result.discovered],
+      };
+    });
   };
 
 
@@ -80,9 +156,7 @@ function Twin() {
       <div className="mt-8 grid gap-6 lg:grid-cols-[1.2fr_1fr]">
         <TwinIntelligencePanel intelligence={intelligence} dimensions={dimensions} />
         <section className="surface-card border-primary/25 bg-primary-soft/50 p-6">
-          <h2 className="flex items-center gap-2 text-lg font-bold">
-            <Sparkles aria-hidden="true" className="size-4 text-primary" /> What improves next
-          </h2>
+          <h2 className="text-lg font-bold">What improves next</h2>
           <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
             Career and project sources sharpen <strong className="text-foreground">who</strong> your
             Twin finds. Assistant sources sharpen{" "}
@@ -119,6 +193,16 @@ function Twin() {
                 <p className="mt-1 text-sm text-muted-foreground">{source.subtitle}</p>
                 {done ? (
                   <p className="mt-3 text-sm italic text-primary">“{source.afterMessage}”</p>
+                ) : source.id === "resume" ? (
+                  <p className="mt-3 text-sm text-muted-foreground">
+                    Upload a PDF, DOC or text résumé. Your Twin scans it and extracts your
+                    experience, projects, skills and certifications.
+                  </p>
+                ) : source.id === "portfolio" ? (
+                  <p className="mt-3 text-sm text-muted-foreground">
+                    Paste your live site or portfolio URL. Your Twin reads it and scores how much
+                    signal it adds.
+                  </p>
                 ) : (
                   <p className="mt-3 text-sm text-muted-foreground">
                     Connecting {source.name} could improve matching by ~
@@ -129,11 +213,23 @@ function Twin() {
                   className="mt-4 w-full"
                   variant={done ? "secondary" : "default"}
                   disabled={done}
-                  onClick={() => startSync(source.id, "import")}
+                  onClick={() => {
+                    if (source.id === "resume") fileInput.current?.click();
+                    else if (source.id === "portfolio") setPortfolioOpen(true);
+                    else startSync(source.id, "import");
+                  }}
                 >
                   {done ? (
                     <>
                       <Check aria-hidden="true" className="size-4" /> Connected
+                    </>
+                  ) : source.id === "resume" ? (
+                    <>
+                      <Upload aria-hidden="true" className="size-4" /> Upload résumé
+                    </>
+                  ) : source.id === "portfolio" ? (
+                    <>
+                      <Link2 aria-hidden="true" className="size-4" /> Add live demo link
                     </>
                   ) : (
                     `Connect ${source.name}`
@@ -189,14 +285,60 @@ function Twin() {
         </div>
       </section>
 
+      <input
+        ref={fileInput}
+        type="file"
+        accept=".pdf,.doc,.docx,.txt,.md,.rtf,application/pdf,text/plain"
+        className="hidden"
+        onChange={(event) => {
+          const file = event.target.files?.[0];
+          event.target.value = "";
+          if (file) void handleResumeFile(file);
+        }}
+      />
+
+      <Dialog open={portfolioOpen} onOpenChange={setPortfolioOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Share your URL</DialogTitle>
+            <DialogDescription>
+              Portfolio, personal site or live demo. Your Twin reads the page and extracts your
+              craft, positioning and featured work.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="portfolio-url">Link</Label>
+            <Input
+              id="portfolio-url"
+              placeholder="yourname.com or https://myproject.vercel.app"
+              value={portfolioUrl}
+              onChange={(event) => setPortfolioUrl(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") submitPortfolio();
+              }}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setPortfolioOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={submitPortfolio} disabled={!portfolioUrl.trim()}>
+              Analyze link
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <ConnectSyncModal
         flow={activeFlow}
         fromIntelligence={baseline}
         toIntelligence={intelligence}
+        run={run}
         onCommit={commit}
         onClose={() => {
           setActiveFlow(null);
           setPending(null);
+          setRun(null);
         }}
       />
     </AppShell>

@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { ChevronRight, Search, Sparkles } from "lucide-react";
+import { ChevronRight, Search } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -115,7 +115,6 @@ function Inbox() {
                       preview.body
                     ) : (
                       <>
-                        <Sparkles aria-hidden="true" className="size-3.5 text-primary" />
                         Twin ready to open this conversation
                       </>
                     )}

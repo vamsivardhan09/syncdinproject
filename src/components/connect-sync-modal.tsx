@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useMotionValue, useSpring } from "motion/react";
-import { Check, Loader2, PartyPopper, Sparkles, TrendingUp } from "lucide-react";
+import { Check, Loader2, PartyPopper, TrendingUp } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
@@ -46,32 +46,50 @@ export function ConnectSyncModal({
   flow,
   fromIntelligence,
   toIntelligence,
+  run,
   onCommit,
   onClose,
 }: {
   flow: SyncFlow | null;
   fromIntelligence: number;
   toIntelligence: number;
+  /** Optional real analysis (résumé / portfolio). Its result replaces the demo chips. */
+  run?: (() => Promise<{ discovered: string[]; summary?: string }>) | null;
   /** Called once processing finishes, so state only updates after the AI "learns". */
   onCommit: () => void;
   onClose: () => void;
 }) {
   const [stepIndex, setStepIndex] = useState(0);
   const [done, setDone] = useState(false);
+  const [result, setResult] = useState<{ discovered: string[]; summary?: string } | null>(null);
   const committed = useRef(false);
 
   useEffect(() => {
     if (!flow) return;
     setStepIndex(0);
     setDone(false);
+    setResult(null);
     committed.current = false;
     let cancelled = false;
+
+    const analysis = run ? run() : null;
+    analysis?.catch(() => undefined);
 
     (async () => {
       for (let i = 0; i < flow.steps.length; i += 1) {
         await runSyncStep(520 + Math.random() * 180);
         if (cancelled) return;
         setStepIndex(i + 1);
+      }
+      if (analysis) {
+        try {
+          const data = await analysis;
+          if (cancelled) return;
+          setResult(data);
+        } catch (error) {
+          if (cancelled) return;
+          toast.error(error instanceof Error ? error.message : "Analysis failed");
+        }
       }
       await runSyncStep(420);
       if (cancelled) return;
@@ -83,7 +101,7 @@ export function ConnectSyncModal({
           setTimeout(() => toast(message), i * 900);
         });
         setTimeout(
-          () => toast.success(`✨ AI found ${flow.opportunities} new networking opportunities.`),
+          () => toast.success(`AI found ${flow.opportunities} new networking opportunities.`),
           flow.toasts.length * 900,
         );
       }
@@ -96,6 +114,7 @@ export function ConnectSyncModal({
   }, [flow?.id]);
 
   const progress = flow ? Math.round((stepIndex / flow.steps.length) * 100) : 0;
+  const discovered = result?.discovered?.length ? result.discovered : (flow?.discovered ?? []);
 
   return (
     <Dialog open={!!flow} onOpenChange={(open) => (!open ? onClose() : undefined)}>
@@ -109,10 +128,7 @@ export function ConnectSyncModal({
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -8 }}
               >
-                <DialogTitle className="flex items-center gap-2 text-lg font-bold">
-                  <Sparkles aria-hidden="true" className="size-4 text-primary" />
-                  {flow.modalTitle}
-                </DialogTitle>
+                <DialogTitle className="text-lg font-bold">{flow.modalTitle}</DialogTitle>
                 <p className="mt-1 text-sm text-muted-foreground">
                   Your AI Twin is learning. This takes a few seconds.
                 </p>
@@ -187,10 +203,12 @@ export function ConnectSyncModal({
                   <PartyPopper aria-hidden="true" className="size-5 text-primary" />
                   {flow.rewardTitle}
                 </DialogTitle>
-                <p className="mt-1 text-sm text-muted-foreground">Your AI discovered:</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {result?.summary ?? "Your AI discovered:"}
+                </p>
 
                 <ul className="mt-4 grid gap-2 sm:grid-cols-2">
-                  {flow.discovered.map((item, i) => (
+                  {discovered.map((item, i) => (
                     <motion.li
                       key={item}
                       initial={{ opacity: 0, y: 8 }}

@@ -7,7 +7,6 @@ import {
   BrainCircuit,
   Settings,
   UserRound,
-  Sparkles,
   LogOut,
   Menu,
   X,
@@ -75,7 +74,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       <div className="rounded-2xl border border-primary/20 bg-primary-soft/70 p-4">
         <p className="flex items-center gap-1.5 text-xs font-semibold text-primary">
-          <Sparkles aria-hidden="true" className="size-3.5" /> Twin Intelligence
+          Twin Intelligence
         </p>
         <p className="mt-1 text-2xl font-extrabold tabular-nums">{intelligence}%</p>
         <p className="mt-1 text-xs text-muted-foreground">

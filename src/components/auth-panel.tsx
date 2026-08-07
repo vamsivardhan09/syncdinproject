@@ -1,7 +1,7 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { motion } from "motion/react";
-import { ArrowLeft, Check, Linkedin, Loader2, Mail, Sparkles } from "lucide-react";
+import { ArrowLeft, Check, Linkedin, Loader2, Mail } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
@@ -252,9 +252,7 @@ export function AuthPanel({ mode }: { mode: "signin" | "signup" }) {
             >
               {pending === "google" ? (
                 <Loader2 aria-hidden="true" className="size-4 animate-spin" />
-              ) : (
-                <Sparkles aria-hidden="true" className="size-4 text-primary" />
-              )}
+              ) : null}
               Continue with Google
             </Button>
 

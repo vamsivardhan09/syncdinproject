@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { motion } from "motion/react";
-import { ArrowRight, Search, Sparkles } from "lucide-react";
+import { ArrowRight, Search } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { RecommendationCard } from "@/components/recommendation-card";
 import { Button } from "@/components/ui/button";
@@ -115,7 +115,7 @@ function Network() {
           className="surface-card mt-7 border-primary/25 bg-primary-soft/50 p-6"
         >
           <h2 className="flex items-center gap-2 text-base font-bold">
-            <Sparkles aria-hidden="true" className="size-4 text-primary" /> Your Twin wants more
+            Your Twin wants more
             context
           </h2>
           <p className="mt-2 max-w-2xl text-sm text-muted-foreground">

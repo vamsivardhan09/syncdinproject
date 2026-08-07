@@ -1,7 +1,7 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { motion } from "motion/react";
-import { ArrowLeft, Check, Linkedin, Loader2, Mail } from "lucide-react";
+import { ArrowLeft, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
@@ -10,26 +10,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-type Pending = null | "google" | "linkedin" | "magic" | "password";
+type Pending = null | "google" | "password";
 
-const proof = [
-  "Twin-to-Twin screening before you ever say hello",
-  "Matches explained in plain language, never a black box",
-  "Enterprise-grade privacy — you approve every intro",
-];
-
-const stats = [
-  { label: "Professionals", value: "12.4k" },
-  { label: "Matches / week", value: "3.2M" },
-  { label: "First match", value: "61s" },
-];
-
-
-/** Split-screen auth surface shared by /signin and /signup. */
+/** Calm 35/65 split auth surface shared by /signin and /signup. */
 export function AuthPanel({ mode }: { mode: "signin" | "signup" }) {
   const navigate = useNavigate();
   const [pending, setPending] = useState<Pending>(null);
-  const [magicEmail, setMagicEmail] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const isSignUp = mode === "signup";
@@ -44,53 +30,6 @@ export function AuthPanel({ mode }: { mode: "signin" | "signup" }) {
     return () => sub.subscription.unsubscribe();
   }, [navigate]);
 
-  // Surface failures bounced back from the LinkedIn callback.
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const error = params.get("linkedin_error");
-    if (!error) return;
-    toast.error(error);
-    params.delete("linkedin_error");
-    const rest = params.toString();
-    window.history.replaceState({}, "", window.location.pathname + (rest ? `?${rest}` : ""));
-  }, []);
-
-  // The LinkedIn popup signs in on this origin, then tells us to pick up the session.
-  useEffect(() => {
-    function onMessage(event: MessageEvent) {
-      if (event.origin !== window.location.origin) return;
-      if ((event.data as { type?: string } | null)?.type !== "syncdinLinkedInSignedIn") return;
-      void supabase.auth.getSession().then(({ data }) => {
-        setPending(null);
-        if (data.session) navigate({ to: "/dashboard", replace: true });
-      });
-    }
-    window.addEventListener("message", onMessage);
-    return () => window.removeEventListener("message", onMessage);
-  }, [navigate]);
-
-  function withLinkedIn() {
-    const popup = window.open(
-      "/api/public/auth/linkedin/start",
-      "syncdin-linkedin",
-      "width=600,height=760",
-    );
-    if (!popup) {
-      toast.error("Allow popups to continue with LinkedIn.");
-      return;
-    }
-    setPending("linkedin");
-    const poll = window.setInterval(() => {
-      if (!popup.closed) return;
-      window.clearInterval(poll);
-      void supabase.auth.getSession().then(({ data }) => {
-        setPending(null);
-        if (data.session) navigate({ to: "/dashboard", replace: true });
-      });
-    }, 500);
-  }
-
-
   async function withGoogle() {
     setPending("google");
     const result = await lovable.auth.signInWithOAuth("google", {
@@ -103,21 +42,6 @@ export function AuthPanel({ mode }: { mode: "signin" | "signup" }) {
     }
     if (result.redirected) return;
     navigate({ to: "/dashboard", replace: true });
-  }
-
-  async function withMagicLink(e: React.FormEvent) {
-    e.preventDefault();
-    setPending("magic");
-    const { error } = await supabase.auth.signInWithOtp({
-      email: magicEmail,
-      options: { emailRedirectTo: window.location.origin },
-    });
-    setPending(null);
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
-    toast.success("Magic link sent — check your inbox to meet your Twin.");
   }
 
   async function withPassword(e: React.FormEvent) {
@@ -153,225 +77,216 @@ export function AuthPanel({ mode }: { mode: "signin" | "signup" }) {
   }
 
   return (
-    <div className="grid min-h-screen lg:grid-cols-[1.05fr_1fr]">
-      <aside className="brand-deep-bg relative hidden flex-col justify-between overflow-hidden p-14 text-primary-foreground lg:flex">
-        <div aria-hidden="true" className="brand-grid-overlay absolute inset-0" />
+    <div className="grid min-h-screen lg:grid-cols-[35fr_65fr]">
+      <aside className="brand-deep-bg relative hidden flex-col justify-between overflow-hidden p-12 text-primary-foreground lg:flex">
+        <div aria-hidden="true" className="brand-grid-overlay absolute inset-0 opacity-40" />
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute -top-40 -left-24 size-[30rem] rounded-full bg-primary/25 blur-3xl"
+          className="pointer-events-none absolute -top-32 -left-20 size-[26rem] rounded-full bg-primary/20 blur-3xl"
         />
 
-        <div className="relative z-10 flex items-center justify-between">
-          <BrandLogo className="text-xl [&_span]:text-primary-foreground" />
-          <span className="rounded-full border border-primary-foreground/20 px-3 py-1 text-[0.65rem] font-semibold tracking-[0.16em] uppercase text-primary-foreground/70">
-            Version 2
-          </span>
-        </div>
+        <BrandLogo className="relative z-10 text-xl [&_span]:text-primary-foreground" />
 
-        <div className="relative z-10 max-w-lg">
-          <p className="text-[0.68rem] font-semibold tracking-[0.2em] uppercase text-primary-foreground/55">
-            AI-native professional networking
-          </p>
-          <h2 className="mt-5 text-[2.6rem] leading-[1.08] font-semibold tracking-tight">
-            Your AI Twin networks
+        <div className="relative z-10">
+          <TwinOrbit />
+          <h2 className="mt-12 text-[2.1rem] leading-[1.12] font-semibold tracking-tight">
+            Networking,
             <br />
-            while you sleep.
+            quietly automated.
           </h2>
-          <p className="mt-5 max-w-md text-base/relaxed text-primary-foreground/70">
-            SyncdIn Twins talk to each other, filter the noise and surface only the people worth your
-            time — with the reason attached.
-          </p>
-
-          <dl className="mt-10 grid max-w-md grid-cols-3 gap-px overflow-hidden rounded-2xl border border-primary-foreground/12 bg-primary-foreground/[0.04]">
-            {stats.map((stat) => (
-              <div key={stat.label} className="bg-primary-foreground/[0.02] px-4 py-5">
-                <dt className="text-[0.62rem] font-medium tracking-[0.1em] uppercase text-primary-foreground/50">
-                  {stat.label}
-                </dt>
-                <dd className="mt-2 text-xl font-semibold tabular-nums">{stat.value}</dd>
-              </div>
-            ))}
-          </dl>
-
-          <ul className="mt-8 space-y-3">
-            {proof.map((line) => (
-              <li key={line} className="flex items-start gap-3 text-sm">
-                <span className="mt-0.5 flex size-4.5 shrink-0 items-center justify-center rounded-full bg-primary-foreground/12">
-                  <Check aria-hidden="true" className="size-3" />
-                </span>
-                <span className="text-primary-foreground/75">{line}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        <div className="relative z-10 border-t border-primary-foreground/12 pt-6">
-          <p className="text-sm/relaxed text-primary-foreground/70">
-            “It replaced three hours of cold outreach a week. The intros actually make sense.”
-          </p>
-          <p className="mt-2 text-xs font-medium tracking-wide text-primary-foreground/45">
-            Priya Raman · Head of Talent, Northwind
+          <p className="mt-4 max-w-xs text-sm/relaxed text-primary-foreground/65">
+            Your AI Twin talks to other Twins and surfaces only the people worth your time.
           </p>
         </div>
+
+        <p className="relative z-10 text-xs text-primary-foreground/40">
+          © {new Date().getFullYear()} SyncdIn
+        </p>
       </aside>
 
-
-      <main className="flex flex-col justify-center px-5 py-10 sm:px-10">
-        <div className="mx-auto w-full max-w-md">
+      <main className="flex flex-col justify-center px-6 py-12 sm:px-12">
+        <div className="mx-auto w-full max-w-[26rem]">
           <Link
             to="/"
-            className="focus-ring inline-flex items-center gap-1.5 rounded-md text-sm text-muted-foreground hover:text-foreground"
+            className="focus-ring inline-flex items-center gap-1.5 rounded-md text-sm text-muted-foreground transition-colors hover:text-foreground"
           >
             <ArrowLeft aria-hidden="true" className="size-3.5" /> Back
           </Link>
 
           <motion.div
-            initial={{ opacity: 0, y: 12 }}
+            initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.45 }}
-            className="mt-6"
+            transition={{ duration: 0.4, ease: "easeOut" }}
+            className="mt-8 rounded-2xl border border-border/60 bg-card p-8 shadow-[0_1px_2px_rgba(16,24,40,0.04),0_12px_40px_-12px_rgba(16,24,40,0.12)] sm:p-10"
           >
             <div className="lg:hidden">
-              <BrandLogo className="text-xl" />
+              <BrandLogo className="text-lg" />
             </div>
 
-            <h1 className="mt-6 text-3xl font-extrabold">
-              {isSignUp ? "Join the network of the future" : "Welcome back"}
+            <h1 className="mt-6 text-[1.75rem] font-semibold tracking-tight lg:mt-0">
+              {isSignUp ? "Create your account" : "Welcome back"}
             </h1>
             <p className="mt-2 text-sm text-muted-foreground">
               {isSignUp
-                ? "Create your account and your Twin starts matching in about 60 seconds."
-                : "Sign in and see what your Twin found while you were away."}
+                ? "Your Twin starts matching in about 60 seconds."
+                : "Sign in to see what your Twin found."}
             </p>
 
             <Button
               onClick={withGoogle}
               variant="outline"
-              className="mt-7 h-12 w-full text-base font-semibold"
+              className="mt-8 h-11 w-full text-[0.95rem] font-medium transition-all duration-200 hover:-translate-y-px hover:shadow-sm active:translate-y-0"
               disabled={pending !== null}
             >
               {pending === "google" ? (
                 <Loader2 aria-hidden="true" className="size-4 animate-spin" />
-              ) : null}
+              ) : (
+                <GoogleMark />
+              )}
               Continue with Google
             </Button>
 
-            <Button
-              onClick={withLinkedIn}
-              variant="outline"
-              className="mt-3 h-12 w-full text-base font-semibold"
-              disabled={pending !== null}
-            >
-              {pending === "linkedin" ? (
-                <Loader2 aria-hidden="true" className="size-4 animate-spin" />
-              ) : (
-                <Linkedin aria-hidden="true" className="size-4 text-[#0a66c2]" />
-              )}
-              Continue with LinkedIn
-            </Button>
+            <div className="my-7 flex items-center gap-3">
+              <span className="h-px flex-1 bg-border" />
+              <span className="text-xs text-muted-foreground">or</span>
+              <span className="h-px flex-1 bg-border" />
+            </div>
 
+            <form className="space-y-4" onSubmit={withPassword}>
+              <div className="space-y-1.5">
+                <Label htmlFor="email" className="text-sm font-medium">
+                  Email
+                </Label>
+                <Input
+                  id="email"
+                  type="email"
+                  required
+                  autoComplete="email"
+                  placeholder="you@company.com"
+                  className="h-11"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              </div>
 
-            <Divider>or use a magic link</Divider>
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="password" className="text-sm font-medium">
+                    Password
+                  </Label>
+                  {isSignUp ? null : (
+                    <Link
+                      to="/forgot-password"
+                      className="focus-ring rounded text-xs font-medium text-muted-foreground hover:text-primary"
+                    >
+                      Forgot password?
+                    </Link>
+                  )}
+                </div>
+                <Input
+                  id="password"
+                  type="password"
+                  required
+                  minLength={8}
+                  autoComplete={isSignUp ? "new-password" : "current-password"}
+                  placeholder="••••••••"
+                  className="h-11"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+              </div>
 
-            <form onSubmit={withMagicLink} className="space-y-3">
-              <Label htmlFor="magic-email" className="sr-only">
-                Email for magic link
-              </Label>
-              <Input
-                id="magic-email"
-                type="email"
-                required
-                autoComplete="email"
-                placeholder="you@domain.com"
-                className="h-12"
-                value={magicEmail}
-                onChange={(e) => setMagicEmail(e.target.value)}
-              />
               <Button
                 type="submit"
-                variant="secondary"
-                className="h-12 w-full"
+                className="h-11 w-full text-[0.95rem] font-semibold transition-all duration-200 hover:-translate-y-px hover:shadow-md active:translate-y-0"
                 disabled={pending !== null}
               >
-                {pending === "magic" ? (
-                  <Loader2 aria-hidden="true" className="size-4 animate-spin" />
-                ) : (
-                  <Mail aria-hidden="true" className="size-4" />
-                )}
-                Email me a magic link
-              </Button>
-            </form>
-
-            <Divider>or use a password</Divider>
-
-            <form className="space-y-3" onSubmit={withPassword}>
-              <Label htmlFor="email" className="sr-only">
-                Email
-              </Label>
-              <Input
-                id="email"
-                type="email"
-                required
-                autoComplete="email"
-                placeholder="you@domain.com"
-                className="h-12"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-              <Label htmlFor="password" className="sr-only">
-                Password
-              </Label>
-              <Input
-                id="password"
-                type="password"
-                required
-                minLength={8}
-                autoComplete={isSignUp ? "new-password" : "current-password"}
-                placeholder="password (8+ characters)"
-                className="h-12"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-              <Button type="submit" className="h-12 w-full" disabled={pending !== null}>
                 {pending === "password" ? (
                   <Loader2 aria-hidden="true" className="size-4 animate-spin" />
                 ) : null}
-                {isSignUp ? "Create my account" : "Sign in"}
+                {isSignUp ? "Create account" : "Sign in"}
               </Button>
             </form>
-
-            <p className="mt-6 text-center text-sm text-muted-foreground">
-              {isSignUp ? (
-                <>
-                  Already have an account?{" "}
-                  <Link to="/signin" className="focus-ring rounded font-semibold text-primary">
-                    Sign in
-                  </Link>
-                </>
-              ) : (
-                <>
-                  New to SyncdIn?{" "}
-                  <Link to="/signup" className="focus-ring rounded font-semibold text-primary">
-                    Create an account
-                  </Link>
-                </>
-              )}
-            </p>
           </motion.div>
+
+          <p className="mt-6 text-center text-sm text-muted-foreground">
+            {isSignUp ? (
+              <>
+                Already have an account?{" "}
+                <Link to="/signin" className="focus-ring rounded font-semibold text-primary">
+                  Sign in
+                </Link>
+              </>
+            ) : (
+              <>
+                New to SyncdIn?{" "}
+                <Link to="/signup" className="focus-ring rounded font-semibold text-primary">
+                  Create account
+                </Link>
+              </>
+            )}
+          </p>
         </div>
       </main>
     </div>
   );
 }
 
-function Divider({ children }: { children: React.ReactNode }) {
+/** Subtle AI-network illustration: a Twin node with orbiting peers. */
+function TwinOrbit() {
+  const nodes = [0, 1, 2, 3, 4];
   return (
-    <div className="my-6 flex items-center gap-3">
-      <span className="h-px flex-1 bg-border" />
-      <span className="text-[0.68rem] font-semibold tracking-[0.14em] text-primary uppercase">
-        {children}
-      </span>
-      <span className="h-px flex-1 bg-border" />
+    <div aria-hidden="true" className="relative size-40">
+      <motion.div
+        className="absolute inset-0"
+        animate={{ rotate: 360 }}
+        transition={{ duration: 40, repeat: Infinity, ease: "linear" }}
+      >
+        <div className="absolute inset-0 rounded-full border border-primary-foreground/12" />
+        <div className="absolute inset-6 rounded-full border border-primary-foreground/10" />
+        {nodes.map((i) => {
+          const angle = (i / nodes.length) * Math.PI * 2;
+          const r = i % 2 === 0 ? 50 : 32;
+          return (
+            <motion.span
+              key={i}
+              className="absolute size-2 rounded-full bg-primary-foreground/70"
+              style={{
+                left: `calc(50% + ${Math.cos(angle) * r}px - 4px)`,
+                top: `calc(50% + ${Math.sin(angle) * r}px - 4px)`,
+              }}
+              animate={{ opacity: [0.35, 1, 0.35], scale: [0.9, 1.25, 0.9] }}
+              transition={{ duration: 3.2, repeat: Infinity, delay: i * 0.5 }}
+            />
+          );
+        })}
+      </motion.div>
+      <span className="absolute top-1/2 left-1/2 size-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary-foreground" />
+      <motion.span
+        className="absolute top-1/2 left-1/2 size-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary-foreground/40"
+        animate={{ scale: [1, 3.4], opacity: [0.5, 0] }}
+        transition={{ duration: 2.8, repeat: Infinity, ease: "easeOut" }}
+      />
     </div>
+  );
+}
+
+function GoogleMark() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 18 18" className="size-4">
+      <path
+        fill="#4285F4"
+        d="M17.64 9.2c0-.64-.06-1.25-.17-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.91c1.7-1.57 2.69-3.88 2.69-6.62Z"
+      />
+      <path
+        fill="#34A853"
+        d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.91-2.26c-.81.54-1.84.86-3.05.86-2.34 0-4.32-1.58-5.03-3.7H.96v2.34A9 9 0 0 0 9 18Z"
+      />
+      <path fill="#FBBC05" d="M3.97 10.72a5.4 5.4 0 0 1 0-3.44V4.94H.96a9 9 0 0 0 0 8.12l3.01-2.34Z" />
+      <path
+        fill="#EA4335"
+        d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.59C13.46.89 11.43 0 9 0A9 9 0 0 0 .96 4.94l3.01 2.34C4.68 5.16 6.66 3.58 9 3.58Z"
+      />
+    </svg>
   );
 }

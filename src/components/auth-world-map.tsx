@@ -1,5 +1,5 @@
 import { motion } from "motion/react";
-import { WORLD_HEIGHT, WORLD_PATH, WORLD_WIDTH } from "@/lib/world-map";
+import { WORLD_PATH } from "@/lib/world-map";
 
 /** Cities shown as active Twin nodes, in equirectangular map coordinates. */
 const NODES = [
@@ -25,11 +25,14 @@ const LINKS: [number, number][] = [
   [0, 4],
 ];
 
-function arc(a: (typeof NODES)[number], b: (typeof NODES)[number]) {
+const ARCS = LINKS.flatMap(([i, j]) => {
+  const a = NODES[i];
+  const b = NODES[j];
+  if (!a || !b) return [];
   const mx = (a.x + b.x) / 2;
   const my = (a.y + b.y) / 2 - Math.hypot(b.x - a.x, b.y - a.y) * 0.28;
-  return `M${a.x},${a.y} Q${mx},${my} ${b.x},${b.y}`;
-}
+  return [`M${a.x},${a.y} Q${mx},${my} ${b.x},${b.y}`];
+});
 
 /** Global AI-network illustration for the auth left panel. */
 export function AuthWorldMap() {
@@ -44,20 +47,18 @@ export function AuthWorldMap() {
         <path
           d={WORLD_PATH}
           className="fill-primary-foreground/12"
-          width={WORLD_WIDTH}
-          height={WORLD_HEIGHT}
         />
 
-        {LINKS.map(([i, j], k) => (
+        {ARCS.map((d, k) => (
           <g key={`link-${k}`}>
             <path
-              d={arc(NODES[i], NODES[j])}
+              d={d}
               fill="none"
               className="stroke-primary-foreground/20"
               strokeWidth={1}
             />
             <motion.path
-              d={arc(NODES[i], NODES[j])}
+              d={d}
               fill="none"
               className="stroke-primary-foreground/80"
               strokeWidth={1.6}

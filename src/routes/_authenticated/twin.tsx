@@ -285,14 +285,60 @@ function Twin() {
         </div>
       </section>
 
+      <input
+        ref={fileInput}
+        type="file"
+        accept=".pdf,.doc,.docx,.txt,.md,.rtf,application/pdf,text/plain"
+        className="hidden"
+        onChange={(event) => {
+          const file = event.target.files?.[0];
+          event.target.value = "";
+          if (file) void handleResumeFile(file);
+        }}
+      />
+
+      <Dialog open={portfolioOpen} onOpenChange={setPortfolioOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Share your URL</DialogTitle>
+            <DialogDescription>
+              Portfolio, personal site or live demo. Your Twin reads the page and extracts your
+              craft, positioning and featured work.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="portfolio-url">Link</Label>
+            <Input
+              id="portfolio-url"
+              placeholder="yourname.com or https://myproject.vercel.app"
+              value={portfolioUrl}
+              onChange={(event) => setPortfolioUrl(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") submitPortfolio();
+              }}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setPortfolioOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={submitPortfolio} disabled={!portfolioUrl.trim()}>
+              Analyze link
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <ConnectSyncModal
         flow={activeFlow}
         fromIntelligence={baseline}
         toIntelligence={intelligence}
+        run={run}
         onCommit={commit}
         onClose={() => {
           setActiveFlow(null);
           setPending(null);
+          setRun(null);
         }}
       />
     </AppShell>

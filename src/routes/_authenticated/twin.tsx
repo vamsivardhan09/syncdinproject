@@ -156,9 +156,7 @@ function Twin() {
       <div className="mt-8 grid gap-6 lg:grid-cols-[1.2fr_1fr]">
         <TwinIntelligencePanel intelligence={intelligence} dimensions={dimensions} />
         <section className="surface-card border-primary/25 bg-primary-soft/50 p-6">
-          <h2 className="flex items-center gap-2 text-lg font-bold">
-            <Sparkles aria-hidden="true" className="size-4 text-primary" /> What improves next
-          </h2>
+          <h2 className="text-lg font-bold">What improves next</h2>
           <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
             Career and project sources sharpen <strong className="text-foreground">who</strong> your
             Twin finds. Assistant sources sharpen{" "}

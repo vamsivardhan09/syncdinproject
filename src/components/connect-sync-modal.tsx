@@ -46,32 +46,50 @@ export function ConnectSyncModal({
   flow,
   fromIntelligence,
   toIntelligence,
+  run,
   onCommit,
   onClose,
 }: {
   flow: SyncFlow | null;
   fromIntelligence: number;
   toIntelligence: number;
+  /** Optional real analysis (résumé / portfolio). Its result replaces the demo chips. */
+  run?: (() => Promise<{ discovered: string[]; summary?: string }>) | null;
   /** Called once processing finishes, so state only updates after the AI "learns". */
   onCommit: () => void;
   onClose: () => void;
 }) {
   const [stepIndex, setStepIndex] = useState(0);
   const [done, setDone] = useState(false);
+  const [result, setResult] = useState<{ discovered: string[]; summary?: string } | null>(null);
   const committed = useRef(false);
 
   useEffect(() => {
     if (!flow) return;
     setStepIndex(0);
     setDone(false);
+    setResult(null);
     committed.current = false;
     let cancelled = false;
+
+    const analysis = run ? run() : null;
+    analysis?.catch(() => undefined);
 
     (async () => {
       for (let i = 0; i < flow.steps.length; i += 1) {
         await runSyncStep(520 + Math.random() * 180);
         if (cancelled) return;
         setStepIndex(i + 1);
+      }
+      if (analysis) {
+        try {
+          const data = await analysis;
+          if (cancelled) return;
+          setResult(data);
+        } catch (error) {
+          if (cancelled) return;
+          toast.error(error instanceof Error ? error.message : "Analysis failed");
+        }
       }
       await runSyncStep(420);
       if (cancelled) return;
@@ -83,7 +101,7 @@ export function ConnectSyncModal({
           setTimeout(() => toast(message), i * 900);
         });
         setTimeout(
-          () => toast.success(`✨ AI found ${flow.opportunities} new networking opportunities.`),
+          () => toast.success(`AI found ${flow.opportunities} new networking opportunities.`),
           flow.toasts.length * 900,
         );
       }
@@ -96,6 +114,7 @@ export function ConnectSyncModal({
   }, [flow?.id]);
 
   const progress = flow ? Math.round((stepIndex / flow.steps.length) * 100) : 0;
+  const discovered = result?.discovered?.length ? result.discovered : (flow?.discovered ?? []);
 
   return (
     <Dialog open={!!flow} onOpenChange={(open) => (!open ? onClose() : undefined)}>

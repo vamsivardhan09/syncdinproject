@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "motion/react";
-import { Check, ChevronDown, Sparkles, Handshake, MessageSquareQuote } from "lucide-react";
+import { Check, ChevronDown, Handshake, MessageSquareQuote } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { photoFor, type DemoPerson } from "@/lib/demo-data";
 import { Button } from "@/components/ui/button";
@@ -133,7 +133,7 @@ export function RecommendationCard({
             </>
           ) : (
             <>
-              <Sparkles aria-hidden="true" className="size-4" /> Let our Twins talk
+              Let our Twins talk
             </>
           )}
         </Button>

@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Loader2, Save, Sparkles } from "lucide-react";
+import { Loader2, Save } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/app-shell";
 import { TwinIntelligencePanel } from "@/components/twin-intelligence";
@@ -151,7 +151,7 @@ function Profile() {
           <TwinIntelligencePanel intelligence={intelligence} dimensions={dimensions} />
           <section className="surface-card p-6">
             <h2 className="flex items-center gap-2 text-lg font-bold">
-              <Sparkles aria-hidden="true" className="size-4 text-primary" /> Sources your Twin reads
+              Sources your Twin reads
             </h2>
             {connected.length === 0 ? (
               <p className="mt-3 text-sm text-muted-foreground">

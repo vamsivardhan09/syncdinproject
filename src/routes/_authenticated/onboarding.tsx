@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { ArrowRight, Check, Loader2, PartyPopper, Sparkles } from "lucide-react";
+import { ArrowRight, Check, Loader2, PartyPopper } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { TwinMeter } from "@/components/twin-intelligence";
 import { Button } from "@/components/ui/button";
@@ -123,7 +123,7 @@ function Onboarding() {
                       setPhase("loading");
                     }}
                   >
-                    <Sparkles aria-hidden="true" className="size-4" /> {current.cta}
+                    {current.cta}
                   </Button>
                   <Button variant="ghost" className="h-12" onClick={advance}>
                     Skip for now

@@ -10,7 +10,6 @@ import {
   MessageSquare,
   Radar,
   ShieldCheck,
-  Sparkles,
   Timer,
   TrendingUp,
   Zap,
@@ -67,7 +66,7 @@ export function Hero() {
       <div className="relative mx-auto grid max-w-6xl items-center gap-14 px-6 pt-16 pb-20 lg:grid-cols-[1.05fr_1fr] lg:pt-24">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
           <span className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary-soft px-3.5 py-1.5 text-xs font-semibold text-primary">
-            <Sparkles aria-hidden="true" className="size-3.5" /> SyncdIn v2 — AI networking, rebuilt
+            SyncdIn v2 — AI networking, rebuilt
           </span>
 
           <h1 className="mt-6 text-4xl leading-[1.04] font-extrabold tracking-tight sm:text-[3.6rem]">
@@ -427,7 +426,7 @@ export function TwinSection() {
 
 const features = [
   {
-    icon: Sparkles,
+    icon: Radar,
     title: "Intelligent feed",
     body: "Not a timeline. A ranked stream of opportunities: founders hiring, recruiters with live roles, mentors with open slots — each scored against your Twin.",
   },

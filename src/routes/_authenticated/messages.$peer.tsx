@@ -1,7 +1,7 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "motion/react";
-import { ArrowLeft, Bot, Loader2, MapPin, Send, Sparkles } from "lucide-react";
+import { ArrowLeft, Bot, Loader2, MapPin, Send } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { AppShell } from "@/components/app-shell";
@@ -249,7 +249,7 @@ function Conversation() {
           </div>
           <div className="mt-4 rounded-xl border border-primary/20 bg-primary-soft/60 p-3 text-sm">
             <p className="flex items-center gap-1.5 text-xs font-semibold tracking-wide text-primary uppercase">
-              <Sparkles aria-hidden="true" className="size-3.5" /> Why your Twin matched you
+              Why your Twin matched you
             </p>
             <p className="mt-1 text-muted-foreground">{person.aiSummary}</p>
           </div>
@@ -325,7 +325,7 @@ function Conversation() {
                 onClick={() => void letTwinsTalk()}
                 disabled={thinking !== null}
               >
-                <Sparkles aria-hidden="true" className="size-4" /> Let our Twins talk
+                Let our Twins talk
               </Button>
             </div>
             <form onSubmit={send} className="flex gap-2">

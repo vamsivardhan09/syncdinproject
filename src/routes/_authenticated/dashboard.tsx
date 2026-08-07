@@ -7,7 +7,6 @@ import {
   Briefcase,
   Flame,
   MessageCircle,
-  Sparkles,
   TrendingUp,
   Users,
 } from "lucide-react";
@@ -197,7 +196,6 @@ function Dashboard() {
                         onClick={() => toggleConnection(person.id)}
                         aria-pressed={state.connectionsMade.includes(person.id)}
                       >
-                        <Sparkles aria-hidden="true" className="size-4" />
                         {state.connectionsMade.includes(person.id)
                           ? "Twins talking"
                           : "Let our Twins talk"}

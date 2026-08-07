@@ -4,6 +4,8 @@ AI-powered networking platform that builds a personal "Twin" to discover, qualif
 
 Built using **TanStack Start** (React full-stack framework), **TypeScript**, **Supabase**, **PostgreSQL** and **Framer Motion**. The architecture is compatible with a modern React full-stack workflow while focusing on rapid product iteration.
 
+**Live URL:** https://syncdin.lovable.app
+
 ---
 
 ## Features

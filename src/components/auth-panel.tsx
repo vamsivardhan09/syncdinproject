@@ -6,6 +6,8 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 import { BrandLogo } from "@/components/brand-logo";
+import { AuthWorldMap } from "@/components/auth-world-map";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -88,16 +90,18 @@ export function AuthPanel({ mode }: { mode: "signin" | "signup" }) {
         <BrandLogo className="relative z-10 text-xl [&_span]:text-primary-foreground" />
 
         <div className="relative z-10">
-          <TwinOrbit />
-          <h2 className="mt-12 text-[2.1rem] leading-[1.12] font-semibold tracking-tight">
-            Networking,
+          <AuthWorldMap />
+          <h2 className="mt-10 text-[2.1rem] leading-[1.12] font-semibold tracking-tight">
+            Connected
             <br />
-            quietly automated.
+            across the world.
           </h2>
           <p className="mt-4 max-w-xs text-sm/relaxed text-primary-foreground/65">
-            Your AI Twin talks to other Twins and surfaces only the people worth your time.
+            Your AI Twin talks to Twins in every timezone and surfaces only the people worth your
+            time.
           </p>
         </div>
+
 
         <p className="relative z-10 text-xs text-primary-foreground/40">
           © {new Date().getFullYear()} SyncdIn

@@ -128,10 +128,7 @@ export function ConnectSyncModal({
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -8 }}
               >
-                <DialogTitle className="flex items-center gap-2 text-lg font-bold">
-                  <Sparkles aria-hidden="true" className="size-4 text-primary" />
-                  {flow.modalTitle}
-                </DialogTitle>
+                <DialogTitle className="text-lg font-bold">{flow.modalTitle}</DialogTitle>
                 <p className="mt-1 text-sm text-muted-foreground">
                   Your AI Twin is learning. This takes a few seconds.
                 </p>

@@ -52,7 +52,9 @@ export type Database = {
           initials: string
           interests: string[]
           kind: string
+          latitude: number | null
           location: string
+          longitude: number | null
           match: number
           name: string
           photo_url: string
@@ -77,7 +79,9 @@ export type Database = {
           initials: string
           interests?: string[]
           kind: string
+          latitude?: number | null
           location: string
+          longitude?: number | null
           match?: number
           name: string
           photo_url: string
@@ -102,7 +106,9 @@ export type Database = {
           initials?: string
           interests?: string[]
           kind?: string
+          latitude?: number | null
           location?: string
+          longitude?: number | null
           match?: number
           name?: string
           photo_url?: string
@@ -177,7 +183,10 @@ export type Database = {
           full_name: string | null
           headline: string | null
           id: string
+          latitude: number | null
           location: string | null
+          location_updated_at: string | null
+          longitude: number | null
           twin_intelligence: number
           updated_at: string
         }
@@ -187,7 +196,10 @@ export type Database = {
           full_name?: string | null
           headline?: string | null
           id: string
+          latitude?: number | null
           location?: string | null
+          location_updated_at?: string | null
+          longitude?: number | null
           twin_intelligence?: number
           updated_at?: string
         }
@@ -197,7 +209,10 @@ export type Database = {
           full_name?: string | null
           headline?: string | null
           id?: string
+          latitude?: number | null
           location?: string | null
+          location_updated_at?: string | null
+          longitude?: number | null
           twin_intelligence?: number
           updated_at?: string
         }

@@ -20,6 +20,38 @@ const accentVar: Record<DemoPerson["accent"], string> = {
   amber: "var(--warning)",
 };
 
+function ZoomControls() {
+  const { zoomIn, zoomOut, resetTransform } = useControls();
+  return (
+    <div className="absolute top-3 right-3 z-10 flex flex-col gap-1 rounded-xl border border-border bg-card/90 p-1 shadow-lift backdrop-blur">
+      <button
+        type="button"
+        onClick={() => zoomIn()}
+        aria-label="Zoom in"
+        className="focus-ring rounded-lg p-2 text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+      >
+        <ZoomIn aria-hidden="true" className="size-4" />
+      </button>
+      <button
+        type="button"
+        onClick={() => zoomOut()}
+        aria-label="Zoom out"
+        className="focus-ring rounded-lg p-2 text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+      >
+        <ZoomOut aria-hidden="true" className="size-4" />
+      </button>
+      <button
+        type="button"
+        onClick={() => resetTransform()}
+        aria-label="Reset map view"
+        className="focus-ring rounded-lg p-2 text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+      >
+        <RotateCcw aria-hidden="true" className="size-4" />
+      </button>
+    </div>
+  );
+}
+
 function place(person: DemoPerson, i: number): Placed | null {
   const coords = resolveLocation(person.location);
   if (!coords) return null;

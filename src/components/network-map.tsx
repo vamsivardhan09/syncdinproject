@@ -155,140 +155,156 @@ export function NetworkMap() {
         </ul>
       </div>
 
-      <div className="relative">
-        <svg
-          viewBox={`0 0 ${WORLD_WIDTH} ${WORLD_HEIGHT}`}
-          role="img"
-          aria-label="World map showing where the people in your AI Twin network are located"
-          className="block w-full bg-muted/40"
+      <div className="relative overflow-hidden">
+        <TransformWrapper
+          initialScale={1}
+          minScale={0.6}
+          maxScale={5}
+          wheel={{ step: 0.12 }}
+          pinch={{ step: 5 }}
+          doubleClick={{ mode: "reset" }}
+          centerOnInit
         >
-          <defs>
-            <radialGradient id="map-glow" cx="50%" cy="50%">
-              <stop offset="0%" stopColor="var(--primary)" stopOpacity="0.28" />
-              <stop offset="100%" stopColor="var(--primary)" stopOpacity="0" />
-            </radialGradient>
-            {visible.map((p) => (
-              <clipPath key={p.id} id={`clip-${p.id}`}>
-                <circle cx={p.x} cy={p.y} r="13" />
-              </clipPath>
-            ))}
-          </defs>
+          <TransformComponent
+            wrapperClass="!w-full"
+            contentClass="w-full cursor-grab active:cursor-grabbing"
+          >
+            <svg
+              viewBox={`0 0 ${WORLD_WIDTH} ${WORLD_HEIGHT}`}
+              role="img"
+              aria-label="World map showing where the people in your AI Twin network are located"
+              className="block w-full bg-muted/40"
+            >
+              <defs>
+                <radialGradient id="map-glow" cx="50%" cy="50%">
+                  <stop offset="0%" stopColor="var(--primary)" stopOpacity="0.28" />
+                  <stop offset="100%" stopColor="var(--primary)" stopOpacity="0" />
+                </radialGradient>
+                {visible.map((p) => (
+                  <clipPath key={p.id} id={`clip-${p.id}`}>
+                    <circle cx={p.x} cy={p.y} r="13" />
+                  </clipPath>
+                ))}
+              </defs>
 
-          <rect width={WORLD_WIDTH} height={WORLD_HEIGHT} fill="url(#map-glow)" />
-          <path
-            d={WORLD_PATH}
-            fill="var(--card)"
-            stroke="var(--primary)"
-            strokeOpacity="0.35"
-            strokeWidth="0.8"
-            vectorEffect="non-scaling-stroke"
-          />
+              <rect width={WORLD_WIDTH} height={WORLD_HEIGHT} fill="url(#map-glow)" />
+              <path
+                d={WORLD_PATH}
+                fill="var(--card)"
+                stroke="var(--primary)"
+                strokeOpacity="0.35"
+                strokeWidth="0.8"
+                vectorEffect="non-scaling-stroke"
+              />
 
-          {me
-            ? visible.map((p, i) => {
-                const mid = {
-                  x: (me.x + p.x) / 2,
-                  y: (me.y + p.y) / 2 - Math.abs(p.x - me.x) * 0.22 - 12,
-                };
-                return (
-                  <motion.path
-                    key={`arc-${p.id}`}
-                    d={`M ${me.x} ${me.y} Q ${mid.x} ${mid.y} ${p.x} ${p.y}`}
-                    fill="none"
-                    stroke={accentVar[p.accent]}
-                    strokeWidth="1.2"
-                    strokeLinecap="round"
-                    strokeDasharray="4 8"
-                    opacity={0.55}
-                    initial={{ pathLength: 0 }}
-                    animate={{ pathLength: 1, strokeDashoffset: [0, -24] }}
+              {me
+                ? visible.map((p, i) => {
+                    const mid = {
+                      x: (me.x + p.x) / 2,
+                      y: (me.y + p.y) / 2 - Math.abs(p.x - me.x) * 0.22 - 12,
+                    };
+                    return (
+                      <motion.path
+                        key={`arc-${p.id}`}
+                        d={`M ${me.x} ${me.y} Q ${mid.x} ${mid.y} ${p.x} ${p.y}`}
+                        fill="none"
+                        stroke={accentVar[p.accent]}
+                        strokeWidth="1.2"
+                        strokeLinecap="round"
+                        strokeDasharray="4 8"
+                        opacity={0.55}
+                        initial={{ pathLength: 0 }}
+                        animate={{ pathLength: 1, strokeDashoffset: [0, -24] }}
+                        transition={{
+                          pathLength: { duration: 1.1, delay: 0.2 + i * 0.08 },
+                          strokeDashoffset: {
+                            duration: 1.6,
+                            repeat: Infinity,
+                            ease: "linear",
+                            delay: 0.2 + i * 0.08,
+                          },
+                        }}
+                      />
+                    );
+                  })
+                : null}
+
+              {visible.map((p, i) => (
+                <motion.g
+                  key={p.id}
+                  initial={{ opacity: 0, scale: 0.4 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.1 + i * 0.09, type: "spring", stiffness: 220, damping: 18 }}
+                  style={{ transformOrigin: `${p.x}px ${p.y}px`, cursor: "pointer" }}
+                  onMouseEnter={() => setActive(p.id)}
+                  onFocus={() => setActive(p.id)}
+                  onClick={() => setActive(p.id)}
+                  tabIndex={0}
+                  role="button"
+                  aria-label={`${p.name}, ${p.role} in ${p.location}, ${p.match}% match`}
+                >
+                  <motion.circle
+                    cx={p.x}
+                    cy={p.y}
+                    fill={accentVar[p.accent]}
+                    initial={{ r: 13, opacity: 0.35 }}
+                    animate={{ r: [13, 26, 13], opacity: [0.35, 0, 0.35] }}
                     transition={{
-                      pathLength: { duration: 1.1, delay: 0.2 + i * 0.08 },
-                      strokeDashoffset: {
-                        duration: 1.6,
-                        repeat: Infinity,
-                        ease: "linear",
-                        delay: 0.2 + i * 0.08,
-                      },
+                      duration: 2.6,
+                      repeat: Infinity,
+                      delay: i * 0.35,
+                      ease: "easeOut",
                     }}
                   />
-                );
-              })
-            : null}
+                  <motion.g
+                    animate={{ y: [0, -2.5, 0] }}
+                    transition={{ duration: 3 + (i % 3) * 0.4, repeat: Infinity, ease: "easeInOut" }}
+                  >
+                    <circle
+                      cx={p.x}
+                      cy={p.y}
+                      r="14.5"
+                      fill="var(--card)"
+                      stroke={accentVar[p.accent]}
+                      strokeWidth="1.5"
+                    />
+                    <image
+                      href={photoFor(p.id)}
+                      x={p.x - 13}
+                      y={p.y - 13}
+                      width="26"
+                      height="26"
+                      clipPath={`url(#clip-${p.id})`}
+                      preserveAspectRatio="xMidYMid slice"
+                    />
+                  </motion.g>
+                </motion.g>
+              ))}
 
-          {visible.map((p, i) => (
-            <motion.g
-              key={p.id}
-              initial={{ opacity: 0, scale: 0.4 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.1 + i * 0.09, type: "spring", stiffness: 220, damping: 18 }}
-              style={{ transformOrigin: `${p.x}px ${p.y}px`, cursor: "pointer" }}
-              onMouseEnter={() => setActive(p.id)}
-              onFocus={() => setActive(p.id)}
-              onClick={() => setActive(p.id)}
-              tabIndex={0}
-              role="button"
-              aria-label={`${p.name}, ${p.role} in ${p.location}, ${p.match}% match`}
-            >
-              <motion.circle
-                cx={p.x}
-                cy={p.y}
-                fill={accentVar[p.accent]}
-                initial={{ r: 13, opacity: 0.35 }}
-                animate={{ r: [13, 26, 13], opacity: [0.35, 0, 0.35] }}
-                transition={{
-                  duration: 2.6,
-                  repeat: Infinity,
-                  delay: i * 0.35,
-                  ease: "easeOut",
-                }}
-              />
-              <motion.g
-                animate={{ y: [0, -2.5, 0] }}
-                transition={{ duration: 3 + (i % 3) * 0.4, repeat: Infinity, ease: "easeInOut" }}
-              >
-                <circle
-                  cx={p.x}
-                  cy={p.y}
-                  r="14.5"
-                  fill="var(--card)"
-                  stroke={accentVar[p.accent]}
-                  strokeWidth="1.5"
-                />
-                <image
-                  href={photoFor(p.id)}
-                  x={p.x - 13}
-                  y={p.y - 13}
-                  width="26"
-                  height="26"
-                  clipPath={`url(#clip-${p.id})`}
-                  preserveAspectRatio="xMidYMid slice"
-                />
-              </motion.g>
-            </motion.g>
-          ))}
-
-          {me ? (
-            <g>
-              <motion.circle
-                cx={me.x}
-                cy={me.y}
-                fill="var(--primary)"
-                initial={{ r: 8, opacity: 0.4 }}
-                animate={{ r: [8, 30, 8], opacity: [0.4, 0, 0.4] }}
-                transition={{ duration: 2.2, repeat: Infinity, ease: "easeOut" }}
-              />
-              <circle
-                cx={me.x}
-                cy={me.y}
-                r="6"
-                fill="var(--primary)"
-                stroke="var(--card)"
-                strokeWidth="2"
-              />
-            </g>
-          ) : null}
-        </svg>
+              {me ? (
+                <g>
+                  <motion.circle
+                    cx={me.x}
+                    cy={me.y}
+                    fill="var(--primary)"
+                    initial={{ r: 8, opacity: 0.4 }}
+                    animate={{ r: [8, 30, 8], opacity: [0.4, 0, 0.4] }}
+                    transition={{ duration: 2.2, repeat: Infinity, ease: "easeOut" }}
+                  />
+                  <circle
+                    cx={me.x}
+                    cy={me.y}
+                    r="6"
+                    fill="var(--primary)"
+                    stroke="var(--card)"
+                    strokeWidth="2"
+                  />
+                </g>
+              ) : null}
+            </svg>
+          </TransformComponent>
+          <ZoomControls />
+        </TransformWrapper>
 
         {activePerson ? (
           <motion.div

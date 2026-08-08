@@ -102,14 +102,8 @@ export function NetworkMap() {
     };
   }, []);
 
-  const placed = useMemo(
-    () => demoPeople.map(place).filter((p): p is Placed => p !== null),
-    [],
-  );
-  const kinds = useMemo(
-    () => ["All", ...Array.from(new Set(placed.map((p) => p.kind)))],
-    [placed],
-  );
+  const placed = useMemo(() => demoPeople.map(place).filter((p): p is Placed => p !== null), []);
+  const kinds = useMemo(() => ["All", ...Array.from(new Set(placed.map((p) => p.kind)))], [placed]);
   const visible = kind === "All" ? placed : placed.filter((p) => p.kind === kind);
   const activePerson = visible.find((p) => p.id === active) ?? null;
 
@@ -127,7 +121,10 @@ export function NetworkMap() {
           {!me ? (
             <p className="mt-1 text-xs text-muted-foreground">
               Add your location on your{" "}
-              <Link to="/profile" className="font-medium text-primary underline-offset-2 hover:underline">
+              <Link
+                to="/profile"
+                className="font-medium text-primary underline-offset-2 hover:underline"
+              >
                 profile
               </Link>{" "}
               (or allow location access) to see live routes from you to every match.
@@ -234,7 +231,12 @@ export function NetworkMap() {
                   key={p.id}
                   initial={{ opacity: 0, scale: 0.4 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: 0.1 + i * 0.09, type: "spring", stiffness: 220, damping: 18 }}
+                  transition={{
+                    delay: 0.1 + i * 0.09,
+                    type: "spring",
+                    stiffness: 220,
+                    damping: 18,
+                  }}
                   style={{ transformOrigin: `${p.x}px ${p.y}px`, cursor: "pointer" }}
                   onMouseEnter={() => setActive(p.id)}
                   onFocus={() => setActive(p.id)}
@@ -258,7 +260,11 @@ export function NetworkMap() {
                   />
                   <motion.g
                     animate={{ y: [0, -2.5, 0] }}
-                    transition={{ duration: 3 + (i % 3) * 0.4, repeat: Infinity, ease: "easeInOut" }}
+                    transition={{
+                      duration: 3 + (i % 3) * 0.4,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                    }}
                   >
                     <circle
                       cx={p.x}

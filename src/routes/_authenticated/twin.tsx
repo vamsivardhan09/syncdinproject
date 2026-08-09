@@ -336,8 +336,10 @@ function Twin() {
         <h2 className="text-xl font-bold">Career &amp; project sources</h2>
         <div className="mt-5 grid gap-4 sm:grid-cols-2">
           {importSources.map((source) => {
+            const sourceId: string = source.id;
             const Icon = icons[source.id] ?? Globe;
             const done = state.connectedSources.includes(source.id);
+
             return (
               <motion.article
                 key={source.id}

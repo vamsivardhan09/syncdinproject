@@ -122,6 +122,33 @@ export type Database = {
         }
         Relationships: []
       }
+      event_presence: {
+        Row: {
+          active: boolean
+          created_at: string
+          event_code: string
+          id: string
+          last_active_at: string
+          user_id: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          event_code: string
+          id?: string
+          last_active_at?: string
+          user_id: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          event_code?: string
+          id?: string
+          last_active_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           body: string

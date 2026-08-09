@@ -53,15 +53,23 @@ function Networks() {
               className="surface-card flex h-full flex-col p-6 transition-shadow hover:shadow-lift"
             >
               <div className="flex items-start justify-between gap-3">
-                <Badge variant="secondary" className="bg-primary-soft text-primary">
-                  {n.kind}
-                </Badge>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge variant="secondary" className="bg-primary-soft text-primary">
+                    {n.kind}
+                  </Badge>
+                  {n.mode === "live" ? (
+                    <span className="flex items-center gap-1.5 rounded-full border border-success/30 bg-success/10 px-2.5 py-1 text-xs font-semibold text-success">
+                      <Radar aria-hidden="true" className="size-3.5" /> Event Radar
+                    </span>
+                  ) : null}
+                </div>
                 {joined ? (
                   <span className="flex items-center gap-1 text-xs font-semibold text-success">
                     <Check aria-hidden="true" className="size-3.5" /> Joined
                   </span>
                 ) : null}
               </div>
+
               <h2 className="mt-3 text-xl font-bold">{n.name}</h2>
               <p className="mt-1 text-sm text-muted-foreground">{n.tagline}</p>
               <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">

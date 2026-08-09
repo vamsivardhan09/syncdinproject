@@ -146,6 +146,8 @@ export function RealPeopleDirectory() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
 
+  const { vector, profile: myProfile } = useTwinVector();
+
   const load = useCallback((q: string) => {
     setError(null);
     void (async () => {
@@ -153,7 +155,7 @@ export function RealPeopleDirectory() {
         // Sequential on purpose: concurrent auth reads contend on the
         // browser session lock and can stall the whole panel.
         const uid = await currentUserId();
-        const list = await searchPeople(q);
+        const list = await searchPeopleRanked(q);
         const incoming = await listIncomingRequests();
 
         setMe(uid);
@@ -171,10 +173,12 @@ export function RealPeopleDirectory() {
     return () => clearTimeout(t);
   }, [load, query]);
 
-  async function connect(profile: PublicProfile) {
+  async function connect(entry: RankedProfile) {
+    const { profile, brief } = entry;
     setBusy(profile.id);
     try {
-      await sendConnectionRequest(profile.id);
+      // Carry the suggested opener so the request lands with real context.
+      await sendConnectionRequest(profile.id, brief.hasEvidence ? brief.opener : null);
       setSent((prev) => new Set(prev).add(profile.id));
       toast.success(`Request sent to ${displayName(profile)}.`);
     } catch (err) {
@@ -197,7 +201,12 @@ export function RealPeopleDirectory() {
     }
   }
 
-  const others = (people ?? []).filter((p) => p.id !== me);
+  const others = rankProfiles(
+    vector,
+    (people ?? []).filter((p) => p.id !== me),
+    { name: myProfile?.full_name, headline: myProfile?.headline },
+  );
+
 
   return (
     <section className="surface-card p-6">

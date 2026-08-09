@@ -246,7 +246,22 @@ export function TwinProvider({ children }: { children: ReactNode }) {
     setState((prev) => ({ ...prev, onboarded: true }));
   }, []);
 
-  const reset = useCallback(() => setState(initialState), []);
+  const reset = useCallback(() => {
+    setState(initialState);
+    void (async () => {
+      try {
+        const { supabase } = await import("@/integrations/supabase/client");
+        const { data } = await supabase.auth.getUser();
+        if (!data.user) return;
+        await Promise.all([
+          supabase.from("twin_sources").delete().eq("user_id", data.user.id),
+          supabase.from("connections").delete().eq("user_id", data.user.id),
+        ]);
+      } catch {
+        /* local reset still applies */
+      }
+    })();
+  }, []);
 
   const value = useMemo(
     () => ({

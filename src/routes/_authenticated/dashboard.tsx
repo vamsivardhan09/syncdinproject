@@ -293,10 +293,29 @@ function Dashboard() {
                 <TwinMeter key={d.key} label={d.label} value={d.value} delay={i * 0.06} compact />
               ))}
             </div>
-            <Button asChild className="mt-4 w-full">
-              <Link to="/onboarding">Improve my Twin</Link>
+            <p className="mt-4 text-xs text-muted-foreground">
+              {next
+                ? `Next best action: add ${next.missing.toLowerCase()} — ${next.benefit.toLowerCase()}.`
+                : "Full signal connected. Matches are running at their sharpest."}
+            </p>
+            <Button asChild className="mt-3 w-full">
+              <Link to="/twin">Improve my Twin</Link>
             </Button>
           </section>
+
+          <section className="surface-card border-primary/25 bg-primary-soft/40 p-5">
+            <h2 className="text-base font-bold">Event Radar</h2>
+            <p className="mt-2 text-xs text-muted-foreground">
+              At a conference or community event? Check in and your Twin shortlists the five people
+              there worth your time.
+            </p>
+            <Button asChild variant="outline" className="mt-3 w-full">
+              <Link to="/networks">
+                Open Event Radar <ArrowRight aria-hidden="true" className="size-4" />
+              </Link>
+            </Button>
+          </section>
+
 
           <section className="surface-card p-5">
             <h2 className="flex items-center gap-2 text-base font-bold">

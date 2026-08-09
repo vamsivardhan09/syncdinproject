@@ -12,12 +12,14 @@ import {
   listIncomingRequests,
   listRealConnections,
   respondToRequest,
-  searchPeople,
+  searchPeopleRanked,
   sendConnectionRequest,
   type ConnectionProfile,
   type ConnectionRequest,
   type PublicProfile,
 } from "@/lib/real-people";
+import { rankProfiles, type RankedProfile } from "@/lib/twin-compatibility";
+import { useTwinVector } from "@/lib/use-twin-vector";
 
 function Avatar({ profile, size = 44 }: { profile: PublicProfile; size?: number }) {
   const name = displayName(profile);
@@ -68,6 +70,69 @@ function PersonRow({
     </li>
   );
 }
+
+/** A ranked real member: computed fit, honest evidence, activity context. */
+function RankedRow({
+  entry,
+  right,
+}: {
+  entry: RankedProfile;
+  right?: React.ReactNode;
+}) {
+  const { profile, brief, activity } = entry;
+  const name = displayName(profile);
+  return (
+    <li className="py-3">
+      <div className="flex items-center gap-3">
+        <Link
+          to="/people/$id"
+          params={{ id: profile.id }}
+          className="focus-ring flex min-w-0 flex-1 items-center gap-3"
+        >
+          <Avatar profile={profile} />
+          <span className="min-w-0">
+            <span className="flex items-center gap-2">
+              <span className="truncate text-sm font-semibold">{name}</span>
+              {brief.hasEvidence ? (
+                <Badge variant="secondary" className="shrink-0 text-[11px]">
+                  {brief.score}% fit
+                </Badge>
+              ) : null}
+            </span>
+            <span className="block truncate text-xs text-muted-foreground">
+              {profile.headline || "Building their AI Twin"}
+              {profile.location ? ` · ${profile.location}` : ""}
+            </span>
+            <span
+              className={`mt-0.5 block text-[11px] ${
+                activity.tier === "live" || activity.tier === "today"
+                  ? "font-semibold text-primary"
+                  : "text-muted-foreground"
+              }`}
+            >
+              {activity.label}
+            </span>
+          </span>
+        </Link>
+        {right}
+      </div>
+      {brief.reasons.length > 0 ? (
+        <ul className="mt-1.5 ml-[56px] space-y-0.5">
+          {brief.reasons.slice(0, 2).map((reason) => (
+            <li key={reason} className="text-xs text-muted-foreground">
+              · {reason}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="mt-1.5 ml-[56px] text-xs text-muted-foreground">
+          Their Twin hasn&apos;t shared enough yet to compare signals.
+        </p>
+      )}
+    </li>
+  );
+}
+
 
 /** Real members: pending requests to answer, plus a searchable directory. */
 export function RealPeopleDirectory() {

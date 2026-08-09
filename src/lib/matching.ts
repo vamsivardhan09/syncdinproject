@@ -30,7 +30,7 @@ export type TwinVector = {
 };
 
 /** Signals unlocked by each Twin source. Mirrors demo-data source ids. */
-const SOURCE_SIGNALS: Record<string, string[]> = {
+export const SOURCE_SIGNALS: Record<string, string[]> = {
   linkedin: [
     "Product strategy",
     "Go-to-market",
@@ -55,7 +55,12 @@ const SOURCE_SIGNALS: Record<string, string[]> = {
 };
 
 /** Signals every Twin starts with, before any source is connected. */
-const BASE_SIGNALS = ["AI products", "LLM orchestration", "Startup collaboration", "Side projects"];
+export const BASE_SIGNALS = [
+  "AI products",
+  "LLM orchestration",
+  "Startup collaboration",
+  "Side projects",
+];
 
 /** How strongly a persona type matches a Twin that has career signals. */
 const KIND_WEIGHT: Record<string, number> = {

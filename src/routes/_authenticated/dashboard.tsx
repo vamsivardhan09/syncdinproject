@@ -26,6 +26,8 @@ import {
   todaysOpportunities,
   trendingDiscussions,
 } from "@/lib/feed-data";
+import { buildTwinVector, rankCandidates } from "@/lib/matching";
+import { nextBestAction } from "@/lib/twin-knowledge";
 import { useTwin } from "@/lib/twin-store";
 import { cn } from "@/lib/utils";
 
@@ -57,12 +59,41 @@ function greeting() {
   return "Good evening";
 }
 
-const stats = [
-  { id: "recruiters", label: "Recruiters found you", value: 8, icon: Briefcase, tone: "text-info" },
-  { id: "founders", label: "Founder matches", value: 5, icon: Users, tone: "text-primary" },
-  { id: "mentors", label: "Mentors available", value: 3, icon: BrainCircuit, tone: "text-success" },
-  { id: "convos", label: "Conversations suggested", value: 12, icon: MessageCircle, tone: "text-warning" },
-];
+/** Counts come from the demo network, not from invented traffic numbers. */
+function demoStats() {
+  const count = (kinds: string[]) => demoPeople.filter((p) => kinds.includes(p.kind)).length;
+  return [
+    {
+      id: "recruiters",
+      label: "Recruiters in your demo network",
+      value: count(["Recruiter"]),
+      icon: Briefcase,
+      tone: "text-info",
+    },
+    {
+      id: "founders",
+      label: "Founder matches",
+      value: count(["Founder", "Investor"]),
+      icon: Users,
+      tone: "text-primary",
+    },
+    {
+      id: "mentors",
+      label: "Mentors available",
+      value: count(["Mentor"]),
+      icon: BrainCircuit,
+      tone: "text-success",
+    },
+    {
+      id: "engineers",
+      label: "Engineers worth meeting",
+      value: count(["AI Engineer", "Software Engineer"]),
+      icon: MessageCircle,
+      tone: "text-warning",
+    },
+  ];
+}
+
 
 function Dashboard() {
   const { state, intelligence, dimensions, toggleConnection } = useTwin();
@@ -82,7 +113,22 @@ function Dashboard() {
 
   const firstName = useMemo(() => (name ? name.split(" ")[0] : "there"), [name]);
   const sourcesConnected = state.connectedSources.length + state.trainedSources.length;
-  const topMatches = demoPeople.slice(0, 3);
+  const stats = useMemo(() => demoStats(), []);
+  const next = nextBestAction([...state.connectedSources, ...state.trainedSources]);
+  const vector = useMemo(
+     () =>
+       buildTwinVector({
+         connectedSources: state.connectedSources,
+         trainedSources: state.trainedSources,
+         connectionsMade: state.connectionsMade,
+         intelligence,
+       }),
+     [state, intelligence],
+   );
+  const ranked = useMemo(() => rankCandidates(vector, demoPeople), [vector]);
+  const worthMeeting = useMemo(() => ranked.filter((r) => r.score >= 75).length, [ranked]);
+  const topMatches = useMemo(() => ranked.slice(0, 3).map((r) => r.candidate), [ranked]);
+  const scoreFor = (id: string) => ranked.find((r) => r.candidate.id === id)?.score ?? 0;
 
   return (
     <AppShell>
@@ -96,12 +142,13 @@ function Dashboard() {
           {greeting()}, {firstName}
         </p>
         <h1 className="mt-2 text-2xl leading-tight font-extrabold sm:text-3xl">
-          Your AI Twin analyzed <span className="brand-gradient-text">247 professionals</span> today
-          and found 13 worth your time.
+          Your Twin read{" "}
+          <span className="brand-gradient-text">{demoPeople.length} profiles</span> in your network
+          and found {worthMeeting} worth your time.
         </h1>
         <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
           Nothing to set up first — this is live value. Every match below comes with the reason your
-          Twin picked it.
+          Twin picked it, recomputed each time your Twin learns something new.
         </p>
 
         <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -120,6 +167,7 @@ function Dashboard() {
           ))}
         </div>
       </motion.header>
+
 
       <div className="mt-6 grid gap-6 xl:grid-cols-[1fr_20rem]">
         <div className="min-w-0 space-y-6">
@@ -160,8 +208,9 @@ function Dashboard() {
                         {item.kind}
                       </Badge>
                       <Badge variant="secondary" className="font-mono">
-                        {item.match}% match
+                        {scoreFor(person.id)}% match
                       </Badge>
+
                     </div>
                     <div className="mt-4 flex items-start gap-3">
                       <img
@@ -245,10 +294,29 @@ function Dashboard() {
                 <TwinMeter key={d.key} label={d.label} value={d.value} delay={i * 0.06} compact />
               ))}
             </div>
-            <Button asChild className="mt-4 w-full">
-              <Link to="/onboarding">Improve my Twin</Link>
+            <p className="mt-4 text-xs text-muted-foreground">
+              {next
+                ? `Next best action: add ${next.missing.toLowerCase()} — ${next.benefit.toLowerCase()}.`
+                : "Full signal connected. Matches are running at their sharpest."}
+            </p>
+            <Button asChild className="mt-3 w-full">
+              <Link to="/twin">Improve my Twin</Link>
             </Button>
           </section>
+
+          <section className="surface-card border-primary/25 bg-primary-soft/40 p-5">
+            <h2 className="text-base font-bold">Event Radar</h2>
+            <p className="mt-2 text-xs text-muted-foreground">
+              At a conference or community event? Check in and your Twin shortlists the five people
+              there worth your time.
+            </p>
+            <Button asChild variant="outline" className="mt-3 w-full">
+              <Link to="/networks">
+                Open Event Radar <ArrowRight aria-hidden="true" className="size-4" />
+              </Link>
+            </Button>
+          </section>
+
 
           <section className="surface-card p-5">
             <h2 className="flex items-center gap-2 text-base font-bold">

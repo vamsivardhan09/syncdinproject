@@ -15,6 +15,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { BrandLogo } from "@/components/brand-logo";
 import { Button } from "@/components/ui/button";
+import { nextBestAction } from "@/lib/twin-knowledge";
 import { useTwin } from "@/lib/twin-store";
 import { cn } from "@/lib/utils";
 
@@ -30,7 +31,8 @@ const nav = [
 
 export function AppShell({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
-  const { intelligence } = useTwin();
+  const { state, intelligence } = useTwin();
+  const next = nextBestAction([...state.connectedSources, ...state.trainedSources]);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState<string | null>(null);
@@ -80,12 +82,15 @@ export function AppShell({ children }: { children: ReactNode }) {
         </p>
         <p className="mt-1 text-2xl font-extrabold tabular-nums">{intelligence}%</p>
         <p className="mt-1 text-xs text-muted-foreground">
-          Each new source makes your twin a sharper negotiator.
+          {next
+            ? `Missing: ${next.missing.toLowerCase()} — ${next.benefit.toLowerCase()}.`
+            : "Every source is connected. Your Twin is matching on full signal."}
         </p>
         <Button asChild size="sm" className="mt-3 w-full">
-          <Link to="/onboarding">Improve my Twin</Link>
+          <Link to="/twin">Improve my Twin</Link>
         </Button>
       </div>
+
 
       <div className="mt-auto space-y-2">
         <p className="truncate px-1 text-xs text-muted-foreground">{email ?? "Signed in"}</p>

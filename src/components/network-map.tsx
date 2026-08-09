@@ -34,25 +34,65 @@ const MAP_STYLE: google.maps.MapTypeStyle[] = [
   { featureType: "road", elementType: "labels.icon", stylers: [{ visibility: "off" }] },
 ];
 
-/** Airbnb-style pill marker rendered as an inline SVG icon. */
-function pillIcon(maps: typeof google.maps, label: string, highlight: boolean) {
-  const w = 58;
-  const h = 30;
-  const bg = highlight ? "#4f39c8" : "#ffffff";
-  const fg = highlight ? "#ffffff" : "#16162a";
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h + 6}" viewBox="0 0 ${w} ${h + 6}">
-    <g filter="none">
-      <rect x="1" y="1" width="${w - 2}" height="${h - 2}" rx="${(h - 2) / 2}" fill="${bg}" stroke="rgba(20,20,40,0.16)"/>
-      <path d="M${w / 2 - 5},${h - 2} L${w / 2},${h + 4} L${w / 2 + 5},${h - 2} Z" fill="${bg}"/>
-      <text x="${w / 2}" y="${h / 2 + 4.5}" text-anchor="middle" font-family="system-ui,-apple-system,Segoe UI,sans-serif" font-size="13" font-weight="700" fill="${fg}">${label}</text>
+/**
+ * Avatar marker: circular profile photo with a match badge. Falls back to
+ * initials whenever the photo can't be drawn (offline or CORS-blocked host).
+ */
+function avatarIcon(
+  maps: typeof google.maps,
+  person: { initials?: string; name: string; match: number },
+  highlight: boolean,
+  photoData?: string,
+) {
+  const size = 52;
+  const ring = highlight ? "#4f39c8" : "#ffffff";
+  const initials =
+    person.initials ??
+    person.name
+      .split(" ")
+      .map((w) => w[0])
+      .slice(0, 2)
+      .join("");
+  const face = photoData
+    ? `<image href="${photoData}" x="4" y="4" width="36" height="36" clip-path="url(#c)" preserveAspectRatio="xMidYMid slice"/>`
+    : `<circle cx="22" cy="22" r="18" fill="#ede9fe"/>
+       <text x="22" y="27" text-anchor="middle" font-family="system-ui,-apple-system,Segoe UI,sans-serif" font-size="14" font-weight="700" fill="#4f39c8">${initials}</text>`;
+
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+    <defs><clipPath id="c"><circle cx="22" cy="22" r="18"/></clipPath></defs>
+    <circle cx="22" cy="22" r="21" fill="${ring}" stroke="rgba(20,20,40,0.18)"/>
+    ${face}
+    <g transform="translate(24,32)">
+      <rect width="26" height="16" rx="8" fill="#4f39c8"/>
+      <text x="13" y="11.5" text-anchor="middle" font-family="system-ui,-apple-system,Segoe UI,sans-serif" font-size="9.5" font-weight="700" fill="#ffffff">${person.match}%</text>
     </g>
   </svg>`;
   return {
     url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`,
-    scaledSize: new maps.Size(w, h + 6),
-    anchor: new maps.Point(w / 2, h + 6),
+    scaledSize: new maps.Size(size, size),
+    anchor: new maps.Point(22, 22),
   } satisfies google.maps.Icon;
 }
+
+/** Draws a remote photo into a canvas so it can be inlined into the marker SVG. */
+async function photoData(url: string): Promise<string | undefined> {
+  try {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.src = url;
+    await img.decode();
+    const canvas = document.createElement("canvas");
+    canvas.width = 72;
+    canvas.height = 72;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return undefined;
+    ctx.drawImage(img, 0, 0, 72, 72);
+    return canvas.toDataURL("image/png");
+  } catch {
+    return undefined;
+  }
+}
+
 
 function meIcon(maps: typeof google.maps) {
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 44 44">
@@ -81,7 +121,9 @@ function infoContent(p: MapPerson) {
       </div>
     </div>
     <a href="/messages/${p.slug}" style="display:block;margin-top:10px;text-align:center;background:#4f39c8;color:#fff;border-radius:10px;padding:7px 10px;font-weight:600;text-decoration:none">Open Twin chat</a>
+    <a href="/network" style="display:block;margin-top:6px;text-align:center;color:#4f39c8;font-weight:600;text-decoration:none">See why you matched</a>
   `;
+
   return el;
 }
 
@@ -184,21 +226,29 @@ export function NetworkMap() {
     const maps = window.google.maps;
 
     const markers = people.map((p) => {
+      let photo: string | undefined;
       const marker = new maps.Marker({
         position: { lat: p.latitude, lng: p.longitude },
-        icon: pillIcon(maps, `${p.match}%`, false),
-        title: `${p.name} — ${p.location}`,
+        icon: avatarIcon(maps, p, false),
+        title: `${p.name} — ${p.role}, ${p.company} · ${p.match}% match`,
+      });
+      // Upgrade to the real profile photo once it can be rasterised.
+      void photoData(p.photo_url).then((data) => {
+        if (!data) return;
+        photo = data;
+        marker.setIcon(avatarIcon(maps, p, false, photo));
       });
       marker.addListener("click", () => {
-        marker.setIcon(pillIcon(maps, `${p.match}%`, true));
+        marker.setIcon(avatarIcon(maps, p, true, photo));
         infoRef.current?.setContent(infoContent(p));
         infoRef.current?.open({ map, anchor: marker });
         maps.event.addListenerOnce(infoRef.current!, "closeclick", () =>
-          marker.setIcon(pillIcon(maps, `${p.match}%`, false)),
+          marker.setIcon(avatarIcon(maps, p, false, photo)),
         );
       });
       return marker;
     });
+
 
     clustererRef.current?.clearMarkers();
     clustererRef.current = new MarkerClusterer({ map, markers });

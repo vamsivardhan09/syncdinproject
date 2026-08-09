@@ -1,11 +1,23 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useRef, useState } from "react";
-import { motion } from "motion/react";
-import { Check, FileText, Github, Globe, Link2, Linkedin, RotateCcw, Upload } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
+import {
+  ArrowRight,
+  Check,
+  FileText,
+  Github,
+  Globe,
+  Link2,
+  Linkedin,
+  Radar,
+  RotateCcw,
+  Upload,
+} from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/app-shell";
 import { ConnectSyncModal } from "@/components/connect-sync-modal";
 import { TwinIntelligencePanel } from "@/components/twin-intelligence";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -18,10 +30,13 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { importSources, trainingSources } from "@/lib/demo-data";
+import { SOURCE_SIGNALS } from "@/lib/matching";
 import { syncFlows, type SyncFlow } from "@/lib/sync-flows";
 import { analyzePortfolio, analyzeResume } from "@/lib/twin-analyze.functions";
+import { openGaps, twinKnowledge } from "@/lib/twin-knowledge";
 import { useTwin } from "@/lib/twin-store";
 import { cn } from "@/lib/utils";
+
 
 
 export const Route = createFileRoute("/_authenticated/twin")({
@@ -64,14 +79,24 @@ function readAsDataUrl(file: File) {
 }
 
 function Twin() {
-  const { state, intelligence, dimensions, connectSource, trainSource, reset } = useTwin();
+  const { state, intelligence, dimensions, gainFor, connectSource, trainSource, reset } = useTwin();
   const [activeFlow, setActiveFlow] = useState<SyncFlow | null>(null);
   const [baseline, setBaseline] = useState(0);
   const [pending, setPending] = useState<{ id: string; kind: "import" | "training" } | null>(null);
   const [run, setRun] = useState<AnalysisRun | null>(null);
   const [portfolioOpen, setPortfolioOpen] = useState(false);
   const [portfolioUrl, setPortfolioUrl] = useState("");
+  const [result, setResult] = useState<{
+    name: string;
+    signals: number;
+    from: number;
+    to: number;
+  } | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
+
+  const sources = [...state.connectedSources, ...state.trainedSources];
+  const knowledge = twinKnowledge(sources).filter((g) => g.items.length > 0);
+  const gaps = openGaps(sources);
 
   const startSync = (id: string, kind: "import" | "training", analysis: AnalysisRun | null = null) => {
     const flow = syncFlows[id];
@@ -84,9 +109,17 @@ function Twin() {
 
   const commit = () => {
     if (!pending) return;
+    const gain = gainFor(pending.id);
+    const signals = SOURCE_SIGNALS[pending.id]?.length ?? 3;
+    const name =
+      importSources.find((s) => s.id === pending.id)?.name ??
+      trainingSources.find((s) => s.id === pending.id)?.name ??
+      "New source";
     if (pending.kind === "import") connectSource(pending.id);
     else trainSource(pending.id);
+    setResult({ name, signals, from: baseline, to: Math.min(99, baseline + gain) });
   };
+
 
   const handleResumeFile = async (file: File) => {
     if (file.size > 12 * 1024 * 1024) {
@@ -144,8 +177,9 @@ function Twin() {
         <div>
           <h1 className="text-3xl font-extrabold sm:text-4xl">My AI Twin</h1>
           <p className="mt-2 max-w-2xl text-muted-foreground">
-            Your Twin gets smarter with every source. More intelligence means better matches and
-            outreach that actually sounds like you.
+            One place to make your Twin smarter. Intelligence is simply how much real signal your
+            Twin has to reason with — the higher it is, the better and better-explained your matches
+            get.
           </p>
         </div>
         <Button variant="ghost" onClick={reset}>
@@ -153,21 +187,92 @@ function Twin() {
         </Button>
       </header>
 
+      <AnimatePresence>
+        {result ? (
+          <motion.section
+            key="enrichment-result"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            className="surface-card mt-6 border-success/30 bg-success/5 p-6"
+          >
+            <h2 className="text-lg font-bold">Your Twin just got smarter</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {result.name} added <strong className="text-foreground">{result.signals} new
+              signals</strong> · Twin Intelligence {result.from}% →{" "}
+              <strong className="text-foreground">{intelligence}%</strong>. Every match score below
+              was recomputed with them.
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Button asChild>
+                <Link to="/network">
+                  View better matches <ArrowRight aria-hidden="true" className="size-4" />
+                </Link>
+              </Button>
+              <Button asChild variant="outline">
+                <Link to="/networks">
+                  <Radar aria-hidden="true" className="size-4" /> Re-scan an event
+                </Link>
+              </Button>
+              <Button variant="ghost" onClick={() => setResult(null)}>
+                Dismiss
+              </Button>
+            </div>
+          </motion.section>
+        ) : null}
+      </AnimatePresence>
+
       <div className="mt-8 grid gap-6 lg:grid-cols-[1.2fr_1fr]">
         <TwinIntelligencePanel intelligence={intelligence} dimensions={dimensions} />
         <section className="surface-card border-primary/25 bg-primary-soft/50 p-6">
-          <h2 className="text-lg font-bold">What improves next</h2>
-          <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-            Career and project sources sharpen <strong className="text-foreground">who</strong> your
-            Twin finds. Assistant sources sharpen{" "}
-            <strong className="text-foreground">how</strong> it speaks for you.
-          </p>
+          <h2 className="text-lg font-bold">Your Twin knows…</h2>
+          {knowledge.length === 0 ? (
+            <p className="mt-3 text-sm text-muted-foreground">
+              Nothing about you yet — it is matching on generic AI-industry signal only. Connect one
+              source below and this fills in immediately.
+            </p>
+          ) : (
+            <dl className="mt-4 space-y-3">
+              {knowledge.map((group) => (
+                <div key={group.key}>
+                  <dt className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                    {group.label}
+                  </dt>
+                  <dd className="mt-1.5 flex flex-wrap gap-1.5">
+                    {group.items.map((item) => (
+                      <Badge key={item} variant="outline" className="font-normal">
+                        {item}
+                      </Badge>
+                    ))}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          )}
           <p className="mt-4 text-sm">
-            Your Twin currently reads {state.connectedSources.length + state.trainedSources.length}{" "}
-            of {importSources.length + trainingSources.length} available sources.
+            Reading {state.connectedSources.length + state.trainedSources.length} of{" "}
+            {importSources.length + trainingSources.length} available sources.
           </p>
         </section>
       </div>
+
+      {gaps.length > 0 ? (
+        <section className="mt-8">
+          <h2 className="text-xl font-bold">Missing signal — and what it unlocks</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Ordered by how much each one improves your matches.
+          </p>
+          <ul className="mt-4 grid gap-3 sm:grid-cols-2">
+            {gaps.map((gap) => (
+              <li key={gap.id} className="surface-card p-4">
+                <p className="text-sm font-bold">{gap.missing}</p>
+                <p className="mt-1 text-sm text-muted-foreground">→ {gap.benefit}</p>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
 
       <section className="mt-10">
         <h2 className="text-xl font-bold">Career &amp; project sources</h2>
@@ -207,8 +312,13 @@ function Twin() {
                   <p className="mt-3 text-sm text-muted-foreground">
                     Connecting {source.name} could improve matching by ~
                     {Math.round(source.gain)}%. Never required — connect whenever you're ready.
+                    <span className="mt-1 block text-xs">
+                      Prototype: live {source.name} OAuth is not enabled yet, so this uses seeded
+                      enrichment. No private data is read.
+                    </span>
                   </p>
                 )}
+
                 <Button
                   className="mt-4 w-full"
                   variant={done ? "secondary" : "default"}
@@ -245,8 +355,11 @@ function Twin() {
       <section className="mt-10">
         <h2 className="text-xl font-bold">Teach it how you think</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Connect an AI assistant so your Twin borrows your reasoning and your voice.
+          Connect an AI assistant so your Twin borrows your reasoning and your voice. In this
+          prototype these are demo integrations — SyncdIn never reads private chat history without an
+          official export or API permission.
         </p>
+
         <div className="mt-5 space-y-4">
           {trainingSources.map((source) => {
             const done = state.trainedSources.includes(source.id);

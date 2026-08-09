@@ -1,0 +1,2 @@
+DELETE FROM public.connections c USING public.connections d WHERE c.ctid > d.ctid AND c.user_id = d.user_id AND c.peer_slug = d.peer_slug;
+ALTER TABLE public.connections ADD CONSTRAINT connections_user_peer_unique UNIQUE (user_id, peer_slug);

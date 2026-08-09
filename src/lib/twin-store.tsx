@@ -59,6 +59,75 @@ async function persistSource(sourceId: string, kind: string, gain: number) {
   }
 }
 
+/** Logs a new connection as activity so it resurfaces in "While you were away". */
+async function noteNewConnection(peerSlug: string) {
+  try {
+    const { noteConnection } = await import("@/lib/network-activity");
+    const { personById } = await import("@/lib/demo-data");
+    await noteConnection(
+      personById(peerSlug)?.name ?? "a new match",
+      "Your Twins have exchanged context — open the conversation to take it from here.",
+    );
+  } catch {
+    /* offline or signed out */
+  }
+}
+
+
+
+
+
+/** Mirrors a connection so it is still there after a refresh or device change. */
+async function persistConnection(peerSlug: string, remove = false) {
+  try {
+    const { supabase } = await import("@/integrations/supabase/client");
+    const { data } = await supabase.auth.getUser();
+    if (!data.user) return;
+    if (remove) {
+      await supabase
+        .from("connections")
+        .delete()
+        .eq("user_id", data.user.id)
+        .eq("peer_slug", peerSlug);
+      return;
+    }
+    await supabase
+      .from("connections")
+      .upsert(
+        { user_id: data.user.id, peer_slug: peerSlug, status: "connected" },
+        { onConflict: "user_id,peer_slug" },
+      );
+  } catch {
+    /* offline or signed out — local state still holds */
+  }
+}
+
+/** Reads persisted sources and connections so the Twin survives a refresh. */
+async function loadRemoteState(): Promise<Partial<TwinState> | null> {
+  try {
+    const { supabase } = await import("@/integrations/supabase/client");
+    const { data } = await supabase.auth.getUser();
+    if (!data.user) return null;
+    const [sources, connections] = await Promise.all([
+      supabase.from("twin_sources").select("source_id, kind"),
+      supabase.from("connections").select("peer_slug"),
+    ]);
+    const rows = sources.data ?? [];
+    return {
+      connectedSources: rows.filter((r) => r.kind === "import").map((r) => r.source_id),
+      trainedSources: rows.filter((r) => r.kind === "training").map((r) => r.source_id),
+      connectionsMade: (connections.data ?? []).map((r) => r.peer_slug),
+    };
+  } catch {
+    return null;
+  }
+}
+
+function union(a: string[] = [], b: string[] = []) {
+  return Array.from(new Set([...a, ...b]));
+}
+
+
 
 export function TwinProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<TwinState>(initialState);
@@ -72,6 +141,24 @@ export function TwinProvider({ children }: { children: ReactNode }) {
       /* ignore corrupt state */
     }
     setHydrated(true);
+  }, []);
+
+  // Merge anything persisted in the backend, so a refresh or new device keeps
+  // the Twin's sources and connections.
+  useEffect(() => {
+    let active = true;
+    void loadRemoteState().then((remote) => {
+      if (!active || !remote) return;
+      setState((prev) => ({
+        ...prev,
+        connectedSources: union(prev.connectedSources, remote.connectedSources),
+        trainedSources: union(prev.trainedSources, remote.trainedSources),
+        connectionsMade: union(prev.connectionsMade, remote.connectionsMade),
+      }));
+    });
+    return () => {
+      active = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -145,21 +232,28 @@ export function TwinProvider({ children }: { children: ReactNode }) {
 
 
   const toggleConnection = useCallback((id: string) => {
-    setState((prev) => ({
-      ...prev,
-      connectionsMade: prev.connectionsMade.includes(id)
-        ? prev.connectionsMade.filter((c) => c !== id)
-        : [...prev.connectionsMade, id],
-    }));
+    setState((prev) => {
+      const has = prev.connectionsMade.includes(id);
+      void persistConnection(id, has);
+      if (!has) void noteNewConnection(id);
+      return {
+        ...prev,
+        connectionsMade: has
+          ? prev.connectionsMade.filter((c) => c !== id)
+          : [...prev.connectionsMade, id],
+      };
+    });
   }, []);
 
   const connect = useCallback((id: string) => {
-    setState((prev) =>
-      prev.connectionsMade.includes(id)
-        ? prev
-        : { ...prev, connectionsMade: [...prev.connectionsMade, id] },
-    );
+    setState((prev) => {
+      if (prev.connectionsMade.includes(id)) return prev;
+      void persistConnection(id);
+      void noteNewConnection(id);
+      return { ...prev, connectionsMade: [...prev.connectionsMade, id] };
+    });
   }, []);
+
 
   const joinNetwork = useCallback((code: string) => {
     setState((prev) =>
@@ -173,7 +267,22 @@ export function TwinProvider({ children }: { children: ReactNode }) {
     setState((prev) => ({ ...prev, onboarded: true }));
   }, []);
 
-  const reset = useCallback(() => setState(initialState), []);
+  const reset = useCallback(() => {
+    setState(initialState);
+    void (async () => {
+      try {
+        const { supabase } = await import("@/integrations/supabase/client");
+        const { data } = await supabase.auth.getUser();
+        if (!data.user) return;
+        await Promise.all([
+          supabase.from("twin_sources").delete().eq("user_id", data.user.id),
+          supabase.from("connections").delete().eq("user_id", data.user.id),
+        ]);
+      } catch {
+        /* local reset still applies */
+      }
+    })();
+  }, []);
 
   const value = useMemo(
     () => ({

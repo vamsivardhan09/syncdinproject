@@ -50,8 +50,19 @@ export async function markActivityRead(ids: string[]) {
 export async function saveConnection(peerSlug: string) {
   const user = await uid();
   if (!user) return;
-  await supabase.from("connections").insert({ user_id: user, peer_slug: peerSlug });
+  await supabase
+    .from("connections")
+    .upsert(
+      { user_id: user, peer_slug: peerSlug, status: "connected" },
+      { onConflict: "user_id,peer_slug" },
+    );
 }
+
+/** Logs a connection as activity so it resurfaces in "While you were away". */
+export async function noteConnection(name: string, context: string) {
+  await recordActivity(`You connected with ${name}`, context);
+}
+
 
 const SCORE_KEY = "syncdin.network.scores.v1";
 

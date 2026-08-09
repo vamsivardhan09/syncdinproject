@@ -130,6 +130,20 @@ function Networks() {
           integration yet.
         </p>
       </section>
+
+      <section className="surface-card mt-5 p-6">
+        <h2 className="text-base font-bold">What&apos;s next (idea tank)</h2>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Deliberately not built yet — the current priority is proving the loop above.
+        </p>
+        <ul className="mt-3 grid gap-2 text-sm text-muted-foreground sm:grid-cols-2">
+          <li>Organiser-owned event networks with a custom join link</li>
+          <li>QR check-in at the venue door</li>
+          <li>Trusted, invite-only communities with reputation signals</li>
+          <li>Group matching: forming a table of four, not just a 1:1</li>
+        </ul>
+      </section>
+
     </AppShell>
   );
 }

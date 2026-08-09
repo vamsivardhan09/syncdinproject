@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { NetworkMap } from "@/components/network-map";
+import { WhileYouWereAway } from "@/components/while-you-were-away";
 import { TwinMeter } from "@/components/twin-intelligence";
 import { RecommendationCard } from "@/components/recommendation-card";
 import { Button } from "@/components/ui/button";
@@ -122,6 +123,7 @@ function Dashboard() {
 
       <div className="mt-6 grid gap-6 xl:grid-cols-[1fr_20rem]">
         <div className="min-w-0 space-y-6">
+          <WhileYouWereAway />
           <NetworkMap />
 
           <section aria-labelledby="feed-heading">

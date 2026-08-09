@@ -5,10 +5,11 @@ import {
   ArrowRight,
   Check,
   FileUp,
-  Link2,
+  Github,
+  Linkedin,
   Loader2,
-  PencilLine,
   Plus,
+  ShieldCheck,
   X,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -27,8 +28,17 @@ import {
   searchPeopleRanked,
   type PublicProfile,
 } from "@/lib/real-people";
-import { analyzePortfolio, analyzeResume, analyzeText } from "@/lib/twin-analyze.functions";
+import { analyzeResume } from "@/lib/twin-analyze.functions";
 import type { TwinAnalysis } from "@/lib/twin-analyze.functions";
+import {
+  REFINEMENT_QUESTIONS,
+  confidenceOf,
+  importGitHub,
+  importLinkedIn,
+  mergeSignals,
+  normalizeLinkedInUrl,
+  type ImportSourceKind,
+} from "@/lib/profile-import";
 import { profileSignals, rankProfiles, type RankedProfile } from "@/lib/twin-compatibility";
 import { useTwin } from "@/lib/twin-store";
 import { cn } from "@/lib/utils";
@@ -40,7 +50,7 @@ export const Route = createFileRoute("/_authenticated/onboarding")({
       {
         name: "description",
         content:
-          "Add one source — a résumé, a link, or a few sentences — and SyncdIn shows you what it learned and who you should meet.",
+          "Start with something you already have — a LinkedIn URL or a résumé — and SyncdIn shows you what it understood and who you should meet.",
       },
       { property: "og:title", content: "Build your SyncdIn AI Twin in 60 seconds" },
       {
@@ -54,17 +64,17 @@ export const Route = createFileRoute("/_authenticated/onboarding")({
   component: Onboarding,
 });
 
-type Phase = "source" | "analyzing" | "understood" | "people";
-type SourceKind = "resume" | "link" | "words";
+type Phase = "start" | "importing" | "understood" | "people" | "enrich" | "refine" | "ready";
 
 const STAGES = [
-  "Reading your source",
+  "Reading what you gave us",
   "Extracting skills and focus",
   "Understanding what you want next",
   "Matching against active members",
 ];
 
 const MAX_FILE_BYTES = 8 * 1024 * 1024;
+const MIN_IMPORT_MS = 2400;
 
 function readFile(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -75,7 +85,6 @@ function readFile(file: File): Promise<string> {
   });
 }
 
-/** Editable chip list — the user always stays in control of what their Twin claims. */
 function ChipEditor({
   label,
   hint,
@@ -152,18 +161,90 @@ function ChipEditor({
   );
 }
 
+/** Illustrative Twin confidence meter — always framed as growing with signals. */
+function ConfidenceMeter({ value }: { value: number }) {
+  return (
+    <div className="rounded-2xl border border-border bg-muted/40 p-4">
+      <div className="flex items-baseline justify-between gap-3">
+        <p className="text-sm font-bold">Twin confidence</p>
+        <p className="font-mono text-sm font-semibold text-primary">{value}%</p>
+      </div>
+      <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-muted">
+        <motion.div
+          className="brand-gradient-bg h-full"
+          initial={{ width: 0 }}
+          animate={{ width: `${value}%` }}
+          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+        />
+      </div>
+      <p className="mt-2 text-xs text-muted-foreground">
+        An illustrative measure of how much usable signal your Twin has. It rises every time you add
+        a source or confirm a detail.
+      </p>
+    </div>
+  );
+}
+
+function MatchList({ ranked }: { ranked: RankedProfile[] }) {
+  return (
+    <ul className="mt-5 divide-y divide-border">
+      {ranked.map(({ profile, brief, activity }) => (
+        <li key={profile.id} className="py-3">
+          <Link
+            to="/people/$id"
+            params={{ id: profile.id }}
+            className="focus-ring flex items-center gap-3"
+          >
+            {profile.avatar_url ? (
+              <img
+                src={profile.avatar_url}
+                alt={displayName(profile)}
+                loading="lazy"
+                className="size-11 rounded-full object-cover ring-1 ring-border"
+              />
+            ) : (
+              <span
+                aria-hidden="true"
+                className="grid size-11 place-items-center rounded-full bg-primary-soft text-sm font-bold text-primary"
+              >
+                {initialsOf(displayName(profile))}
+              </span>
+            )}
+            <span className="min-w-0 flex-1">
+              <span className="flex items-center gap-2">
+                <span className="truncate text-sm font-semibold">{displayName(profile)}</span>
+                {brief.hasEvidence ? (
+                  <Badge variant="secondary" className="text-[11px]">
+                    {brief.score}% fit
+                  </Badge>
+                ) : null}
+              </span>
+              <span className="block truncate text-xs text-muted-foreground">
+                {brief.reasons[0] ?? profile.headline ?? "Their Twin is still learning"}
+              </span>
+              <span className="block text-[11px] text-muted-foreground">{activity.label}</span>
+            </span>
+            <ArrowRight aria-hidden="true" className="size-4 text-muted-foreground" />
+          </Link>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 function Onboarding() {
   const navigate = useNavigate();
   const { intelligence, connectSource, completeOnboarding, state } = useTwin();
 
-  const [phase, setPhase] = useState<Phase>("source");
-  const [kind, setKind] = useState<SourceKind>("resume");
+  const [phase, setPhase] = useState<Phase>("start");
   const [stage, setStage] = useState(0);
-  const [url, setUrl] = useState("");
-  const [words, setWords] = useState("");
+  const [linkedinUrl, setLinkedinUrl] = useState("");
+  const [githubUrl, setGithubUrl] = useState("");
   const [fileName, setFileName] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
+  const [enrichError, setEnrichError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [sources, setSources] = useState<ImportSourceKind[]>([]);
 
   const [headline, setHeadline] = useState("");
   const [summary, setSummary] = useState("");
@@ -174,44 +255,67 @@ function Onboarding() {
 
   const [people, setPeople] = useState<PublicProfile[] | null>(null);
   const [myName, setMyName] = useState<string | null>(null);
+  const [picked, setPicked] = useState<string[]>([]);
 
-  // Animates the learning sequence while the real analysis is in flight.
   useEffect(() => {
-    if (phase !== "analyzing") return;
+    if (phase !== "importing") return;
+    setStage(0);
     const t = window.setInterval(
       () => setStage((s) => Math.min(s + 1, STAGES.length - 1)),
-      900,
+      700,
     );
     return () => window.clearInterval(t);
   }, [phase]);
 
+  // Pre-fill from whatever the account already knows, so "Skip for now" still works.
   useEffect(() => {
     void getMyProfile()
-      .then((row) => setMyName(row?.full_name ?? null))
+      .then((row) => {
+        if (!row) return;
+        setMyName(row.full_name ?? null);
+        setHeadline((h) => h || (row.headline ?? ""));
+        setSummary((s) => s || (row.twin_summary ?? ""));
+        setSkills((v) => (v.length ? v : (row.skills ?? [])));
+        setGoals((v) => (v.length ? v : (row.goals ?? [])));
+        setInterests((v) => (v.length ? v : (row.interests ?? [])));
+      })
       .catch(() => setMyName(null));
   }, []);
 
-  function applyAnalysis(analysis: TwinAnalysis) {
-    setHeadline(analysis.headline);
-    setSummary(analysis.summary);
-    setSkills(analysis.skills);
-    setGoals(analysis.goals);
-    setInterests(analysis.interests);
-    setDiscovered(analysis.discovered);
-    setPhase("understood");
+  const confidence = useMemo(
+    () => confidenceOf({ skills, goals, interests }, sources.length > 1 ? 46 : 34),
+    [skills, goals, interests, sources],
+  );
+
+  function noteSource(kind: ImportSourceKind, twinSourceId: string) {
+    setSources((prev) => (prev.includes(kind) ? prev : [...prev, kind]));
+    connectSource(twinSourceId);
   }
 
-  async function analyze(run: () => Promise<TwinAnalysis>, sourceId: string) {
+  /** LinkedIn URL → demo import adapter. No scraping, no LinkedIn API claim. */
+  async function runLinkedIn() {
+    const normalized = normalizeLinkedInUrl(linkedinUrl);
+    if (!normalized) {
+      setError("Enter a profile URL that looks like linkedin.com/in/your-name");
+      return;
+    }
     setError(null);
-    setStage(0);
-    setPhase("analyzing");
+    setPhase("importing");
+    const started = Date.now();
     try {
-      const analysis = await run();
-      connectSource(sourceId);
-      applyAnalysis(analysis);
+      const result = importLinkedIn(normalized.url, myName);
+      await new Promise((r) => window.setTimeout(r, Math.max(0, MIN_IMPORT_MS - (Date.now() - started))));
+      setHeadline((h) => h || result.headline);
+      setSummary(result.summary);
+      setSkills((v) => mergeSignals(v, result.skills));
+      setGoals((v) => mergeSignals(v, result.goals, 12));
+      setInterests((v) => mergeSignals(v, result.interests, 12));
+      setDiscovered(result.discovered);
+      noteSource("linkedin_url_demo", "linkedin");
+      setPhase("understood");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "That source could not be analysed.");
-      setPhase("source");
+      setError(err instanceof Error ? err.message : "That profile URL couldn't be imported.");
+      setPhase("start");
     }
   }
 
@@ -220,19 +324,31 @@ function Onboarding() {
       setError("Please upload a file under 8 MB.");
       return;
     }
+    setError(null);
     setFileName(file.name);
-    const fileData = await readFile(file);
-    await analyze(
-      () =>
-        analyzeResume({
-          data: { filename: file.name, mimeType: file.type || "application/pdf", fileData },
-        }),
-      "resume",
-    );
+    setPhase("importing");
+    try {
+      const fileData = await readFile(file);
+      const analysis: TwinAnalysis = await analyzeResume({
+        data: { filename: file.name, mimeType: file.type || "application/pdf", fileData },
+      });
+      setHeadline((h) => h || analysis.headline);
+      setSummary(analysis.summary);
+      setSkills((v) => mergeSignals(v, analysis.skills));
+      setGoals((v) => mergeSignals(v, analysis.goals, 12));
+      setInterests((v) => mergeSignals(v, analysis.interests, 12));
+      setDiscovered(analysis.discovered);
+      noteSource("resume", "resume");
+      setPhase("understood");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "That résumé could not be read.");
+      setPhase("start");
+    }
   }
 
-  async function confirmSignals() {
-    setSaving(true);
+  /** Persists the current signals, then loads the payoff list. */
+  async function saveAndShowPeople() {
+    setBusy(true);
     try {
       await saveTwinSignals({
         headline: headline || null,
@@ -248,7 +364,69 @@ function Onboarding() {
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not save your Twin signals.");
     } finally {
-      setSaving(false);
+      setBusy(false);
+    }
+  }
+
+  async function runGitHub() {
+    setEnrichError(null);
+    setBusy(true);
+    try {
+      const result = await importGitHub(githubUrl);
+      setSkills((v) => mergeSignals(v, result.skills));
+      setInterests((v) => mergeSignals(v, result.interests, 12));
+      setDiscovered(result.discovered);
+      if (!headline && result.headline) setHeadline(result.headline);
+      noteSource("github_url", "github");
+      toast.success("GitHub added — your Twin now knows what you build.");
+      setPhase("refine");
+    } catch (err) {
+      setEnrichError(err instanceof Error ? err.message : "GitHub couldn't be read.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function togglePick(option: string) {
+    setPicked((prev) =>
+      prev.includes(option) ? prev.filter((p) => p !== option) : [...prev, option],
+    );
+  }
+
+  /** Applies the refinement chips to the right signal fields and saves. */
+  async function finishRefinement() {
+    const nextGoals = mergeSignals(
+      goals,
+      REFINEMENT_QUESTIONS.filter((q) => q.field === "goals").flatMap((q) =>
+        q.options.filter((o) => picked.includes(o)),
+      ),
+      12,
+    );
+    const nextInterests = mergeSignals(
+      interests,
+      REFINEMENT_QUESTIONS.filter((q) => q.field === "interests").flatMap((q) =>
+        q.options.filter((o) => picked.includes(o)),
+      ),
+      12,
+    );
+    setGoals(nextGoals);
+    setInterests(nextInterests);
+    setBusy(true);
+    try {
+      await saveTwinSignals({
+        headline: headline || null,
+        twin_summary: summary || null,
+        skills,
+        goals: nextGoals,
+        interests: nextInterests,
+      });
+      const list = await searchPeopleRanked("", 12);
+      setPeople(list);
+      setPhase("ready");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not save your refinements.");
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -269,15 +447,42 @@ function Onboarding() {
     () => rankProfiles(vector, people ?? [], { name: myName, headline }).slice(0, 5),
     [vector, people, myName, headline],
   );
-  const rankedDemo = useMemo(
-    () => rankCandidates(vector, demoPeople).slice(0, 5),
-    [vector],
-  );
+  const rankedDemo = useMemo(() => rankCandidates(vector, demoPeople).slice(0, 5), [vector]);
 
-  const progress = phase === "source" ? 20 : phase === "analyzing" ? 55 : phase === "understood" ? 80 : 100;
+  const progress =
+    phase === "start"
+      ? 12
+      : phase === "importing"
+        ? 34
+        : phase === "understood"
+          ? 52
+          : phase === "people"
+            ? 70
+            : phase === "enrich"
+              ? 82
+              : phase === "refine"
+                ? 92
+                : 100;
 
-  const canSubmit =
-    kind === "link" ? url.trim().length > 8 : kind === "words" ? words.trim().length >= 40 : true;
+  const eyebrow =
+    phase === "start"
+      ? "Start with something you already have"
+      : phase === "importing"
+        ? "Building your Twin"
+        : phase === "understood"
+          ? "Your Twin is taking shape"
+          : phase === "people"
+            ? "People you may want to meet"
+            : phase === "enrich"
+              ? "Make your Twin smarter"
+              : phase === "refine"
+                ? "Three quick questions"
+                : "Your Twin is ready";
+
+  function skipToDashboard() {
+    completeOnboarding();
+    void navigate({ to: "/dashboard" });
+  }
 
   return (
     <AppShell>
@@ -285,16 +490,10 @@ function Onboarding() {
         <header>
           <div className="flex items-center justify-between gap-4">
             <p className="text-xs font-semibold tracking-[0.14em] text-primary uppercase">
-              {phase === "source"
-                ? "One source is enough"
-                : phase === "analyzing"
-                  ? "Building your Twin"
-                  : phase === "understood"
-                    ? "What SyncdIn learned about you"
-                    : "Who you should meet"}
+              {eyebrow}
             </p>
             <p className="font-mono text-xs text-muted-foreground">
-              Twin Intelligence {intelligence}%
+              Twin confidence {confidence}%
             </p>
           </div>
           <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted">
@@ -315,146 +514,94 @@ function Onboarding() {
             transition={{ duration: 0.35 }}
             className="surface-card mt-6 p-6 sm:p-8"
           >
-            {phase === "source" ? (
+            {phase === "start" ? (
               <>
                 <h1 className="text-2xl font-extrabold sm:text-3xl">
-                  Give your Twin <span className="brand-gradient-text">one thing</span> to read.
+                  Let&apos;s build your <span className="brand-gradient-text">Twin</span>.
                 </h1>
                 <p className="mt-2 text-muted-foreground">
-                  A résumé, a link, or a few sentences about your current work. You&apos;ll see what
-                  it understood before anything is saved — and you can enrich it later.
+                  Start with something you already have. One source is enough to see what SyncdIn
+                  understands about you — and who you should meet.
                 </p>
 
-                <div className="mt-6 flex flex-wrap gap-2" role="tablist" aria-label="Source type">
-                  {(
-                    [
-                      { id: "resume", label: "Upload résumé", icon: FileUp },
-                      { id: "link", label: "Paste a link", icon: Link2 },
-                      { id: "words", label: "In your own words", icon: PencilLine },
-                    ] as const
-                  ).map((tab) => (
-                    <button
-                      key={tab.id}
-                      type="button"
-                      role="tab"
-                      aria-selected={kind === tab.id}
-                      onClick={() => {
-                        setKind(tab.id);
+                <div className="mt-6 rounded-2xl border border-primary/30 bg-primary-soft/40 p-5">
+                  <div className="flex items-center gap-2">
+                    <Linkedin aria-hidden="true" className="size-5 text-primary" />
+                    <h2 className="text-sm font-bold">Paste your LinkedIn profile URL</h2>
+                    <Badge variant="secondary" className="text-[11px]">
+                      Fastest
+                    </Badge>
+                  </div>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    What you get: a first Twin and a ranked list of people worth meeting, in about a
+                    minute.
+                  </p>
+                  <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+                    <Input
+                      className="h-12"
+                      type="url"
+                      inputMode="url"
+                      aria-label="LinkedIn profile URL"
+                      placeholder="https://www.linkedin.com/in/your-name"
+                      value={linkedinUrl}
+                      onChange={(e) => {
+                        setLinkedinUrl(e.target.value);
                         setError(null);
                       }}
-                      className={cn(
-                        "focus-ring inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition-colors",
-                        kind === tab.id
-                          ? "border-primary bg-primary-soft text-primary"
-                          : "border-border text-muted-foreground hover:text-foreground",
-                      )}
-                    >
-                      <tab.icon aria-hidden="true" className="size-4" />
-                      {tab.label}
-                    </button>
-                  ))}
-                </div>
-
-                <div className="mt-5">
-                  {kind === "resume" ? (
-                    <label className="focus-within:ring-ring/40 flex cursor-pointer flex-col items-center gap-2 rounded-2xl border border-dashed border-border px-6 py-10 text-center transition-colors hover:border-primary/50 focus-within:ring-2">
-                      <FileUp aria-hidden="true" className="size-6 text-primary" />
-                      <span className="text-sm font-semibold">
-                        {fileName ?? "Choose a PDF, DOCX or TXT résumé"}
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        Read once to build your Twin. Max 8 MB.
-                      </span>
-                      <input
-                        type="file"
-                        accept=".pdf,.doc,.docx,.txt,.md"
-                        className="sr-only"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) void onFile(file);
-                        }}
-                      />
-                    </label>
-                  ) : null}
-
-                  {kind === "link" ? (
-                    <div className="flex flex-col gap-3 sm:flex-row">
-                      <Input
-                        className="h-12"
-                        type="url"
-                        inputMode="url"
-                        aria-label="Portfolio or profile URL"
-                        placeholder="https://your-site.com or a public profile URL"
-                        value={url}
-                        onChange={(e) => setUrl(e.target.value)}
-                      />
-                      <Button
-                        className="h-12"
-                        disabled={!canSubmit}
-                        onClick={() =>
-                          void analyze(
-                            () => analyzePortfolio({ data: { url: url.trim() } }),
-                            "portfolio",
-                          )
-                        }
-                      >
-                        Build my Twin <ArrowRight aria-hidden="true" className="size-4" />
-                      </Button>
-                    </div>
-                  ) : null}
-
-                  {kind === "words" ? (
-                    <div>
-                      <Textarea
-                        rows={5}
-                        aria-label="Describe your current work"
-                        placeholder="I'm a product engineer working on AI onboarding flows. Right now I'm trying to find design partners and people who've shipped retention loops at seed stage…"
-                        value={words}
-                        onChange={(e) => setWords(e.target.value)}
-                      />
-                      <div className="mt-3 flex flex-wrap items-center gap-3">
-                        <Button
-                          className="h-12"
-                          disabled={!canSubmit}
-                          onClick={() =>
-                            void analyze(
-                              () => analyzeText({ data: { text: words.trim() } }),
-                              "own-words",
-                            )
-                          }
-                        >
-                          Build my Twin <ArrowRight aria-hidden="true" className="size-4" />
-                        </Button>
-                        <p className="text-xs text-muted-foreground">
-                          {words.trim().length < 40
-                            ? "A couple of sentences is enough — 40 characters minimum."
-                            : "Looks good."}
-                        </p>
-                      </div>
-                    </div>
-                  ) : null}
-                </div>
-
-                {error ? <p className="mt-4 text-sm text-destructive">{error}</p> : null}
-
-                <div className="mt-6 flex flex-wrap items-center gap-3 border-t border-border pt-5">
-                  <Button
-                    variant="ghost"
-                    onClick={() => {
-                      completeOnboarding();
-                      void navigate({ to: "/dashboard" });
-                    }}
-                  >
-                    Skip for now
-                  </Button>
-                  <p className="text-xs text-muted-foreground">
-                    Without a source your matches stay generic until you add one in My Twin.
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") void runLinkedIn();
+                      }}
+                    />
+                    <Button className="h-12" onClick={() => void runLinkedIn()}>
+                      Continue <ArrowRight aria-hidden="true" className="size-4" />
+                    </Button>
+                  </div>
+                  {error ? <p className="mt-3 text-sm text-destructive">{error}</p> : null}
+                  <p className="mt-3 flex items-start gap-2 text-xs text-muted-foreground">
+                    <ShieldCheck aria-hidden="true" className="mt-0.5 size-3.5 shrink-0" />
+                    SyncdIn never asks for your LinkedIn password and does not scrape your account.
+                    Only public profile information you point us at is used, and in this prototype
+                    the import runs through a demo adapter you can review and edit before anything is
+                    saved.
                   </p>
+                </div>
+
+                <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                  <label className="focus-within:ring-ring/40 flex cursor-pointer flex-col gap-1 rounded-2xl border border-dashed border-border p-5 transition-colors hover:border-primary/50 focus-within:ring-2">
+                    <span className="flex items-center gap-2 text-sm font-bold">
+                      <FileUp aria-hidden="true" className="size-4 text-primary" />
+                      {fileName ?? "Upload your résumé"}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      Read once to extract skills and goals. PDF, DOCX or TXT, max 8 MB.
+                    </span>
+                    <input
+                      type="file"
+                      accept=".pdf,.doc,.docx,.txt,.md"
+                      className="sr-only"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) void onFile(file);
+                      }}
+                    />
+                  </label>
+
+                  <button
+                    type="button"
+                    className="focus-ring flex flex-col gap-1 rounded-2xl border border-border p-5 text-left transition-colors hover:border-primary/50"
+                    onClick={() => setPhase("understood")}
+                  >
+                    <span className="text-sm font-bold">Skip for now</span>
+                    <span className="text-xs text-muted-foreground">
+                      Continue with only what&apos;s already in your account. You can add sources any
+                      time.
+                    </span>
+                  </button>
                 </div>
               </>
             ) : null}
 
-            {phase === "analyzing" ? (
+            {phase === "importing" ? (
               <div className="py-10 text-center">
                 <Loader2 aria-hidden="true" className="mx-auto size-8 animate-spin text-primary" />
                 <h1 className="mt-6 text-xl font-bold">Your Twin is reading</h1>
@@ -478,6 +625,10 @@ function Onboarding() {
                     </li>
                   ))}
                 </ul>
+                <p className="mx-auto mt-6 max-w-sm text-xs text-muted-foreground">
+                  Next you&apos;ll see exactly what it understood — and you can correct anything
+                  before it is saved.
+                </p>
               </div>
             ) : null}
 
@@ -487,10 +638,11 @@ function Onboarding() {
                   Personal Intelligence
                 </Badge>
                 <h1 className="mt-4 text-2xl font-extrabold sm:text-3xl">
-                  Here&apos;s what your Twin understood.
+                  {myName ? `${myName.split(" ")[0]}, your` : "Your"} Twin is taking shape.
                 </h1>
                 <p className="mt-2 text-muted-foreground">
-                  Edit anything that&apos;s off. This is what other Twins will match against.
+                  {summary ||
+                    "Add the details below and your Twin will start matching you against active members."}
                 </p>
 
                 {discovered.length > 0 ? (
@@ -507,6 +659,10 @@ function Onboarding() {
                     ))}
                   </div>
                 ) : null}
+
+                <div className="mt-6">
+                  <ConfidenceMeter value={confidence} />
+                </div>
 
                 <div className="mt-6 space-y-5">
                   <div>
@@ -531,14 +687,9 @@ function Onboarding() {
                       onChange={(e) => setSummary(e.target.value)}
                     />
                   </div>
+                  <ChipEditor label="Skills" hint="What you can do" values={skills} onChange={setSkills} />
                   <ChipEditor
-                    label="Skills"
-                    hint="What you can do"
-                    values={skills}
-                    onChange={setSkills}
-                  />
-                  <ChipEditor
-                    label="Goals"
+                    label="Looking for"
                     hint="What you want next"
                     values={goals}
                     onChange={setGoals}
@@ -553,15 +704,18 @@ function Onboarding() {
 
                 <Button
                   className="mt-7 h-12 w-full text-base"
-                  disabled={saving}
-                  onClick={() => void confirmSignals()}
+                  disabled={busy}
+                  onClick={() => void saveAndShowPeople()}
                 >
-                  {saving ? (
-                    <Loader2 aria-hidden="true" className="size-4 animate-spin" />
-                  ) : null}
+                  {busy ? <Loader2 aria-hidden="true" className="size-4 animate-spin" /> : null}
                   This is me — show me who to meet
                   <ArrowRight aria-hidden="true" className="size-4" />
                 </Button>
+                <div className="mt-3 text-center">
+                  <Button variant="ghost" size="sm" onClick={skipToDashboard}>
+                    Skip for now
+                  </Button>
+                </div>
               </div>
             ) : null}
 
@@ -571,58 +725,15 @@ function Onboarding() {
                   Your first matches
                 </Badge>
                 <h1 className="mt-4 text-2xl font-extrabold sm:text-3xl">
-                  People worth meeting, based on what your Twin just learned.
+                  People you may want to meet.
                 </h1>
+                <p className="mt-2 text-muted-foreground">
+                  Ranked by what your Twin just learned — shared skills, overlapping goals and
+                  complementary expertise.
+                </p>
 
                 {rankedMembers.length > 0 ? (
-                  <ul className="mt-6 divide-y divide-border">
-                    {rankedMembers.map(({ profile, brief, activity }) => (
-                      <li key={profile.id} className="py-3">
-                        <Link
-                          to="/people/$id"
-                          params={{ id: profile.id }}
-                          className="focus-ring flex items-center gap-3"
-                        >
-                          {profile.avatar_url ? (
-                            <img
-                              src={profile.avatar_url}
-                              alt={displayName(profile)}
-                              loading="lazy"
-                              className="size-11 rounded-full object-cover ring-1 ring-border"
-                            />
-                          ) : (
-                            <span
-                              aria-hidden="true"
-                              className="grid size-11 place-items-center rounded-full bg-primary-soft text-sm font-bold text-primary"
-                            >
-                              {initialsOf(displayName(profile))}
-                            </span>
-                          )}
-                          <span className="min-w-0 flex-1">
-                            <span className="flex items-center gap-2">
-                              <span className="truncate text-sm font-semibold">
-                                {displayName(profile)}
-                              </span>
-                              {brief.hasEvidence ? (
-                                <Badge variant="secondary" className="text-[11px]">
-                                  {brief.score}% fit
-                                </Badge>
-                              ) : null}
-                            </span>
-                            <span className="block truncate text-xs text-muted-foreground">
-                              {brief.reasons[0] ??
-                                profile.headline ??
-                                "Their Twin is still learning"}
-                            </span>
-                            <span className="block text-[11px] text-muted-foreground">
-                              {activity.label}
-                            </span>
-                          </span>
-                          <ArrowRight aria-hidden="true" className="size-4 text-muted-foreground" />
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
+                  <MatchList ranked={rankedMembers} />
                 ) : (
                   <>
                     <p className="mt-3 text-sm text-muted-foreground">
@@ -648,23 +759,202 @@ function Onboarding() {
                 )}
 
                 <div className="mt-7 flex flex-wrap gap-3">
+                  <Button className="h-12 flex-1 text-base" onClick={() => setPhase("enrich")}>
+                    Make my Twin smarter <ArrowRight aria-hidden="true" className="size-4" />
+                  </Button>
+                  <Button variant="outline" className="h-12" onClick={skipToDashboard}>
+                    Skip for now
+                  </Button>
+                </div>
+              </div>
+            ) : null}
+
+            {phase === "enrich" ? (
+              <div>
+                <Badge variant="secondary">Optional</Badge>
+                <h1 className="mt-4 text-2xl font-extrabold sm:text-3xl">
+                  Add GitHub to help your Twin understand what you build.
+                </h1>
+                <p className="mt-2 text-muted-foreground">
+                  Your public repositories show the languages and problems you actually work on, so
+                  engineering matches get noticeably sharper than a résumé alone allows.
+                </p>
+
+                <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+                  <Input
+                    className="h-12"
+                    aria-label="GitHub profile URL or username"
+                    placeholder="https://github.com/your-username"
+                    value={githubUrl}
+                    onChange={(e) => {
+                      setGithubUrl(e.target.value);
+                      setEnrichError(null);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") void runGitHub();
+                    }}
+                  />
+                  <Button className="h-12" disabled={busy || !githubUrl.trim()} onClick={() => void runGitHub()}>
+                    {busy ? (
+                      <Loader2 aria-hidden="true" className="size-4 animate-spin" />
+                    ) : (
+                      <Github aria-hidden="true" className="size-4" />
+                    )}
+                    Add GitHub
+                  </Button>
+                </div>
+                {enrichError ? <p className="mt-3 text-sm text-destructive">{enrichError}</p> : null}
+                <p className="mt-3 flex items-start gap-2 text-xs text-muted-foreground">
+                  <ShieldCheck aria-hidden="true" className="mt-0.5 size-3.5 shrink-0" />
+                  Read from GitHub&apos;s public API only — public repositories, languages and
+                  topics. No sign-in, no private data.
+                </p>
+
+                <div className="mt-6 flex flex-wrap gap-3 border-t border-border pt-5">
+                  <Button variant="outline" className="h-11" onClick={() => setPhase("refine")}>
+                    Not now
+                  </Button>
+                  <Button variant="ghost" className="h-11" onClick={skipToDashboard}>
+                    Skip for now
+                  </Button>
+                </div>
+              </div>
+            ) : null}
+
+            {phase === "refine" ? (
+              <div>
+                <Badge variant="secondary">30 seconds</Badge>
+                <h1 className="mt-4 text-2xl font-extrabold sm:text-3xl">
+                  Three taps to sharpen every match.
+                </h1>
+                <p className="mt-2 text-muted-foreground">
+                  Pick whatever applies. This is the strongest signal your Twin can get — it changes
+                  who appears at the top of your network.
+                </p>
+
+                <div className="mt-6 space-y-6">
+                  {REFINEMENT_QUESTIONS.map((q) => (
+                    <div key={q.id}>
+                      <h3 className="text-sm font-bold">{q.title}</h3>
+                      <p className="text-xs text-muted-foreground">{q.why}</p>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {q.options.map((option) => {
+                          const active = picked.includes(option);
+                          return (
+                            <button
+                              key={option}
+                              type="button"
+                              aria-pressed={active}
+                              onClick={() => togglePick(option)}
+                              className={cn(
+                                "focus-ring rounded-full border px-4 py-2 text-sm font-medium transition-colors",
+                                active
+                                  ? "border-primary bg-primary-soft text-primary"
+                                  : "border-border text-muted-foreground hover:text-foreground",
+                              )}
+                            >
+                              {active ? (
+                                <Check aria-hidden="true" className="mr-1 inline size-3.5" />
+                              ) : null}
+                              {option}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <Button
+                  className="mt-7 h-12 w-full text-base"
+                  disabled={busy}
+                  onClick={() => void finishRefinement()}
+                >
+                  {busy ? <Loader2 aria-hidden="true" className="size-4 animate-spin" /> : null}
+                  Finish my Twin <ArrowRight aria-hidden="true" className="size-4" />
+                </Button>
+                <div className="mt-3 text-center">
+                  <Button variant="ghost" size="sm" onClick={skipToDashboard}>
+                    Skip for now
+                  </Button>
+                </div>
+              </div>
+            ) : null}
+
+            {phase === "ready" ? (
+              <div>
+                <Badge className="bg-success-soft text-success hover:bg-success-soft">
+                  Twin ready
+                </Badge>
+                <h1 className="mt-4 text-2xl font-extrabold sm:text-3xl">
+                  Your Twin is ready{myName ? `, ${myName.split(" ")[0]}` : ""}.
+                </h1>
+                <p className="mt-2 text-muted-foreground">
+                  {summary || "It now matches you against active members every time you open SyncdIn."}
+                </p>
+
+                <div className="mt-6 grid gap-4 sm:grid-cols-2">
+                  <ConfidenceMeter value={confidence} />
+                  <div className="rounded-2xl border border-border p-4">
+                    <p className="text-sm font-bold">Signals your Twin uses</p>
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      {skills.length} skills · {goals.length} goals · {interests.length} interests
+                    </p>
+                    <div className="mt-3 flex flex-wrap gap-1.5">
+                      {sources.map((source) => (
+                        <Badge key={source} variant="secondary" className="text-[11px]">
+                          {source === "linkedin_url_demo"
+                            ? "LinkedIn URL (demo import)"
+                            : source === "resume"
+                              ? "Résumé"
+                              : source === "github_url"
+                                ? "GitHub (public API)"
+                                : "Your answers"}
+                        </Badge>
+                      ))}
+                      {picked.length > 0 ? (
+                        <Badge variant="secondary" className="text-[11px]">
+                          Your answers
+                        </Badge>
+                      ) : null}
+                    </div>
+                  </div>
+                </div>
+
+                <h2 className="mt-7 text-sm font-bold">Top matches right now</h2>
+                {rankedMembers.length > 0 ? (
+                  <MatchList ranked={rankedMembers.slice(0, 3)} />
+                ) : (
+                  <ul className="mt-4 divide-y divide-border">
+                    {rankedDemo.slice(0, 3).map(({ candidate, score, reasons }) => (
+                      <li key={candidate.id} className="py-3">
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-semibold">{candidate.name}</p>
+                          <Badge variant="secondary" className="text-[11px]">
+                            {score}% fit
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          {reasons[0] ?? candidate.role}
+                        </p>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+
+                <div className="mt-7 flex flex-wrap gap-3">
                   <Button
                     className="h-12 flex-1 text-base"
-                    onClick={() => void navigate({ to: "/dashboard" })}
-                  >
-                    Go to my dashboard <ArrowRight aria-hidden="true" className="size-4" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="h-12"
                     onClick={() => void navigate({ to: "/network" })}
                   >
-                    Browse everyone
+                    Explore your network <ArrowRight aria-hidden="true" className="size-4" />
+                  </Button>
+                  <Button variant="outline" className="h-12" onClick={skipToDashboard}>
+                    Go to dashboard
                   </Button>
                 </div>
                 <p className="mt-4 text-xs text-muted-foreground">
-                  Want sharper matches? Add more sources any time in My Twin — recommendations
-                  improve as your Twin learns.
+                  Twin confidence keeps rising as you add sources in My Twin and connect with people.
                 </p>
               </div>
             ) : null}

@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Loader2, MessageCircle, Pencil, Save, UserRound, X } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/app-shell";
+import { RealConnectionsList } from "@/components/real-people-directory";
 import { TwinIntelligencePanel } from "@/components/twin-intelligence";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

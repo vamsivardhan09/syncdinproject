@@ -5,6 +5,7 @@ import {
   Users,
   MessageSquare,
   BrainCircuit,
+  Radar,
   Settings,
   UserRound,
   LogOut,
@@ -20,6 +21,7 @@ import { cn } from "@/lib/utils";
 const nav = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/network", label: "My Network", icon: Users },
+  { to: "/networks", label: "Networks", icon: Radar },
   { to: "/messages", label: "Messages", icon: MessageSquare },
   { to: "/twin", label: "My AI Twin", icon: BrainCircuit },
   { to: "/profile", label: "Profile", icon: UserRound },

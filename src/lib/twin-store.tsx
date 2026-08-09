@@ -59,12 +59,11 @@ async function persistSource(sourceId: string, kind: string, gain: number) {
   }
 }
 
-/** Mirrors a connection to the backend and logs it as activity. */
-async function persistConnection(peerSlug: string) {
+/** Logs a new connection as activity so it resurfaces in "While you were away". */
+async function noteNewConnection(peerSlug: string) {
   try {
-    const { saveConnection, noteConnection } = await import("@/lib/network-activity");
+    const { noteConnection } = await import("@/lib/network-activity");
     const { personById } = await import("@/lib/demo-data");
-    await saveConnection(peerSlug);
     await noteConnection(
       personById(peerSlug)?.name ?? "a new match",
       "Your Twins have exchanged context — open the conversation to take it from here.",
@@ -74,20 +73,7 @@ async function persistConnection(peerSlug: string) {
   }
 }
 
-async function dropConnection(peerSlug: string) {
-  try {
-    const { supabase } = await import("@/integrations/supabase/client");
-    const { data } = await supabase.auth.getUser();
-    if (!data.user) return;
-    await supabase
-      .from("connections")
-      .delete()
-      .eq("user_id", data.user.id)
-      .eq("peer_slug", peerSlug);
-  } catch {
-    /* offline or signed out */
-  }
-}
+
 
 /** Reads persisted Twin progress so a refresh or new device keeps the loop. */
 async function readRemoteState() {

@@ -255,7 +255,10 @@ function Profile() {
             )}
           </section>
 
+          <RealConnectionsList />
+
           {/* Connections */}
+
           <section className="surface-card p-6">
             <div className="flex items-center gap-2">
               <h2 className="text-lg font-bold">Connections</h2>

@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
+import { toast } from "sonner";
 import { importSources, trainingSources, twinDimensions } from "@/lib/demo-data";
 
 const STORAGE_KEY = "syncdin.twin.v2";
@@ -21,6 +22,9 @@ const initialState: TwinState = {
   joinedNetworks: [],
 };
 
+/** Result of a persisted connection attempt — never a fake success. */
+export type ConnectResult = { ok: boolean; error?: string };
+
 type TwinContextValue = {
   state: TwinState;
   hydrated: boolean;
@@ -29,8 +33,10 @@ type TwinContextValue = {
   gainFor: (id: string) => number;
   connectSource: (id: string) => void;
   trainSource: (id: string) => void;
-  toggleConnection: (id: string) => void;
-  connect: (id: string) => void;
+  toggleConnection: (id: string) => Promise<ConnectResult>;
+  connect: (id: string) => Promise<ConnectResult>;
+  /** Peer slugs whose write is currently in flight. */
+  pendingConnections: string[];
   joinNetwork: (code: string) => void;
   completeOnboarding: () => void;
   reset: () => void;
@@ -77,28 +83,32 @@ async function noteNewConnection(peerSlug: string) {
 
 
 
-/** Mirrors a connection so it is still there after a refresh or device change. */
-async function persistConnection(peerSlug: string, remove = false) {
+/**
+ * Writes the connection to the database and reports the outcome, so the UI can
+ * show a real error instead of an optimistic success that vanishes on refresh.
+ */
+async function persistConnection(peerSlug: string, remove = false): Promise<ConnectResult> {
   try {
     const { supabase } = await import("@/integrations/supabase/client");
     const { data } = await supabase.auth.getUser();
-    if (!data.user) return;
+    if (!data.user) return { ok: false, error: "You need to be signed in to save connections." };
     if (remove) {
-      await supabase
+      const { error } = await supabase
         .from("connections")
         .delete()
         .eq("user_id", data.user.id)
         .eq("peer_slug", peerSlug);
-      return;
+      return error ? { ok: false, error: error.message } : { ok: true };
     }
-    await supabase
+    const { error } = await supabase
       .from("connections")
       .upsert(
         { user_id: data.user.id, peer_slug: peerSlug, status: "connected" },
         { onConflict: "user_id,peer_slug" },
       );
-  } catch {
-    /* offline or signed out — local state still holds */
+    return error ? { ok: false, error: error.message } : { ok: true };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "Network error." };
   }
 }
 

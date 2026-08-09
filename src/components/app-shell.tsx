@@ -80,12 +80,15 @@ export function AppShell({ children }: { children: ReactNode }) {
         </p>
         <p className="mt-1 text-2xl font-extrabold tabular-nums">{intelligence}%</p>
         <p className="mt-1 text-xs text-muted-foreground">
-          Each new source makes your twin a sharper negotiator.
+          {next
+            ? `Missing: ${next.missing.toLowerCase()} — ${next.benefit.toLowerCase()}.`
+            : "Every source is connected. Your Twin is matching on full signal."}
         </p>
         <Button asChild size="sm" className="mt-3 w-full">
-          <Link to="/onboarding">Improve my Twin</Link>
+          <Link to="/twin">Improve my Twin</Link>
         </Button>
       </div>
+
 
       <div className="mt-auto space-y-2">
         <p className="truncate px-1 text-xs text-muted-foreground">{email ?? "Signed in"}</p>

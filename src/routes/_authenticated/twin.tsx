@@ -386,10 +386,11 @@ function Twin() {
                   onClick={() => {
                     if (source.id === "resume") fileInput.current?.click();
                     else if (source.id === "portfolio") setPortfolioOpen(true);
-                    else if (source.id === "linkedin" || source.id === "github") {
+                    else if (sourceId === "linkedin" || sourceId === "github") {
                       setAskValue("");
-                      setUrlAsk(source.id);
-                    } else startSync(source.id as string, "import");
+                      setUrlAsk(sourceId);
+                    } else startSync(sourceId, "import");
+
 
 
                   }}

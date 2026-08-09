@@ -16,9 +16,32 @@ export type EventNetwork = {
   dates: string;
   attendeeCount: number;
   host: string;
+  /** "live" networks run the on-site Event Radar experience. */
+  mode?: "live";
+  /** Event themes used to weight event relevance in the radar ranking. */
+  topics?: string[];
 };
 
 export const networks: EventNetwork[] = [
+  {
+    code: "aws-summit-bengaluru",
+    name: "AWS Summit Bengaluru",
+    kind: "Conference",
+    tagline: "Cloud, data and applied AI — one day, one very crowded venue.",
+    location: "Bengaluru International Exhibition Centre, India",
+    dates: "Today · 09:00–18:00 IST",
+    attendeeCount: 86,
+    host: "Amazon Web Services",
+    mode: "live",
+    topics: [
+      "Cloud infrastructure",
+      "Applied AI",
+      "Data platforms",
+      "Serverless",
+      "RAG systems",
+      "Developer tooling",
+    ],
+  },
   {
     code: "ai-builders-summit-2026",
     name: "AI Builders Summit 2026",
@@ -40,6 +63,7 @@ export const networks: EventNetwork[] = [
     host: "Arcadia Systems",
   },
 ];
+
 
 export function networkByCode(code: string) {
   return networks.find((n) => n.code === code);

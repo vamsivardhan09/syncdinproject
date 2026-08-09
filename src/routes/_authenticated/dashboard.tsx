@@ -114,6 +114,7 @@ function Dashboard() {
   const firstName = useMemo(() => (name ? name.split(" ")[0] : "there"), [name]);
   const sourcesConnected = state.connectedSources.length + state.trainedSources.length;
   const stats = useMemo(() => demoStats(), []);
+  const next = nextBestAction([...state.connectedSources, ...state.trainedSources]);
   const vector = useMemo(
      () =>
        buildTwinVector({

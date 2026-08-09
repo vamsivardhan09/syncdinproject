@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { Check, Clock, Loader2, Search, UserPlus, Users, X } from "lucide-react";
+import { Check, Clock, Loader2, MessageCircle, Search, UserPlus, Users, X } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -389,7 +389,17 @@ export function RealConnectionsList() {
       ) : (
         <ul className="mt-2 divide-y divide-border">
           {rows.map((profile) => (
-            <PersonRow key={profile.id} profile={profile} />
+            <PersonRow
+              key={profile.id}
+              profile={profile}
+              right={
+                <Button asChild size="sm" variant="outline">
+                  <Link to="/messages/$peer" params={{ peer: profile.id }}>
+                    <MessageCircle aria-hidden="true" className="size-4" /> Message
+                  </Link>
+                </Button>
+              }
+            />
           ))}
         </ul>
       )}

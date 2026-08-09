@@ -258,7 +258,14 @@ function MemberProfile() {
                 <Button
                   disabled={busy}
                   onClick={() =>
-                    void act(() => sendConnectionRequest(profile.id), `Request sent to ${name}.`)
+                    void act(
+                      () =>
+                        sendConnectionRequest(
+                          profile.id,
+                          brief.hasEvidence ? brief.opener : null,
+                        ),
+                      `Request sent to ${name}.`,
+                    )
                   }
                 >
                   {busy ? (
@@ -276,7 +283,25 @@ function MemberProfile() {
               </>
             )}
           </div>
+
+          {request?.intro_note ? (
+            <div className="mt-4 rounded-xl border border-border bg-muted/40 p-4">
+              <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                {incoming ? `${name} opened with` : "Your opener on this request"}
+              </p>
+              <p className="mt-1.5 text-sm">{request.intro_note}</p>
+            </div>
+          ) : null}
         </header>
+
+        {!isSelf ? <TwinMatchPanel name={name} brief={brief} activity={activity} /> : null}
+
+        {profile.twin_summary ? (
+          <section className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+            <h2 className="text-sm font-bold">How their Twin describes them</h2>
+            <p className="mt-2 text-sm text-muted-foreground">{profile.twin_summary}</p>
+          </section>
+        ) : null}
 
         <section className="rounded-2xl border border-border bg-card p-6 shadow-sm">
           <h2 className="text-sm font-bold">Skills their Twin can speak to</h2>
@@ -293,7 +318,20 @@ function MemberProfile() {
               {name} has not trained their Twin with skills yet.
             </p>
           )}
+          {profile.interests && profile.interests.length > 0 ? (
+            <>
+              <h2 className="mt-5 text-sm font-bold">Interests</h2>
+              <ul className="mt-3 flex flex-wrap gap-2">
+                {profile.interests.map((item) => (
+                  <li key={item}>
+                    <Badge variant="outline">{item}</Badge>
+                  </li>
+                ))}
+              </ul>
+            </>
+          ) : null}
         </section>
+
       </div>
     </AppShell>
   );

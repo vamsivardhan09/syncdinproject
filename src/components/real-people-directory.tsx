@@ -85,11 +85,12 @@ export function RealPeopleDirectory() {
     setError(null);
     void (async () => {
       try {
-        const [uid, list, incoming] = await Promise.all([
-          currentUserId(),
-          searchPeople(q),
-          listIncomingRequests(),
-        ]);
+        // Sequential on purpose: concurrent auth reads contend on the
+        // browser session lock and can stall the whole panel.
+        const uid = await currentUserId();
+        const list = await searchPeople(q);
+        const incoming = await listIncomingRequests();
+
         setMe(uid);
         setPeople(list);
         setRequests(incoming);

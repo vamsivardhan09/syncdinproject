@@ -343,13 +343,11 @@ export function NetworkGraph() {
                   <MessageCircle aria-hidden="true" className="size-4" /> Chat
                 </Link>
               </Button>
-              {active.person.kind === "real" ? (
-                <Button asChild size="sm" variant="outline" className="flex-1">
-                  <Link to="/people/$id" params={{ id: active.person.id }}>
-                    <UserRound aria-hidden="true" className="size-4" /> Profile
-                  </Link>
-                </Button>
-              ) : null}
+              <Button asChild size="sm" variant="outline" className="flex-1">
+                <Link to="/people/$id" params={{ id: active.person.id }}>
+                  <UserRound aria-hidden="true" className="size-4" /> Profile
+                </Link>
+              </Button>
             </div>
           </motion.div>
         ) : null}

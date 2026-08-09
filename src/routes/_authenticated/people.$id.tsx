@@ -30,6 +30,8 @@ import {
 } from "@/lib/real-people";
 import { activityOf, twinBrief } from "@/lib/twin-compatibility";
 import { useTwinVector } from "@/lib/use-twin-vector";
+import { photoFor } from "@/lib/demo-data";
+import { resolvePerson } from "@/lib/people-directory";
 
 
 export const Route = createFileRoute("/_authenticated/people/$id")({
@@ -61,6 +63,7 @@ type State =
 
 function MemberProfile() {
   const { id } = Route.useParams();
+  const demoPerson = resolvePerson(id);
   const router = useRouter();
   const [state, setState] = useState<State>({ phase: "loading" });
   const [busy, setBusy] = useState(false);
@@ -95,6 +98,56 @@ function MemberProfile() {
   }, [id]);
 
   useEffect(load, [load]);
+
+  if (demoPerson) {
+    return (
+      <AppShell>
+        <div className="max-w-3xl space-y-6">
+          <Link
+            to="/network"
+            className="focus-ring inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground"
+          >
+            <ArrowLeft aria-hidden="true" className="size-4" /> Network
+          </Link>
+          <header className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+            <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
+              <img
+                src={photoFor(demoPerson.id)}
+                alt={demoPerson.name}
+                className="size-20 rounded-full object-cover ring-2 ring-primary-soft"
+              />
+              <div className="min-w-0 flex-1">
+                <h1 className="text-2xl font-bold tracking-tight">{demoPerson.name}</h1>
+                <p className="mt-0.5 text-sm text-muted-foreground">
+                  {demoPerson.role} · {demoPerson.company}
+                </p>
+                <p className="mt-2 inline-flex items-center gap-1 text-xs text-muted-foreground">
+                  <MapPin aria-hidden="true" className="size-3.5" /> {demoPerson.location}
+                </p>
+              </div>
+            </div>
+            <div className="mt-5 flex flex-wrap gap-2">
+              <Button asChild>
+                <Link to="/messages/$peer" params={{ peer: demoPerson.id }}>
+                  <MessageCircle aria-hidden="true" className="size-4" /> Message
+                </Link>
+              </Button>
+            </div>
+          </header>
+          <section className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+            <h2 className="text-sm font-bold">About</h2>
+            <p className="mt-2 text-sm text-muted-foreground">{demoPerson.bio}</p>
+            <h2 className="mt-5 text-sm font-bold">Skills</h2>
+            <ul className="mt-3 flex flex-wrap gap-2">
+              {demoPerson.skills.map((skill) => (
+                <li key={skill}><Badge variant="secondary">{skill}</Badge></li>
+              ))}
+            </ul>
+          </section>
+        </div>
+      </AppShell>
+    );
+  }
 
   async function act(fn: () => Promise<unknown>, success: string) {
     setBusy(true);
@@ -216,8 +269,10 @@ function MemberProfile() {
                 <Badge className="h-9 gap-1.5 px-3">
                   <Check aria-hidden="true" className="size-3.5" /> Connected
                 </Badge>
-                <Button variant="outline" disabled title="Member-to-member chat is coming next">
-                  <MessageCircle aria-hidden="true" className="size-4" /> Message
+                <Button asChild variant="outline">
+                  <Link to="/messages/$peer" params={{ peer: profile.id }}>
+                    <MessageCircle aria-hidden="true" className="size-4" /> Message
+                  </Link>
                 </Button>
               </>
             ) : incoming ? (
@@ -274,6 +329,11 @@ function MemberProfile() {
                     <UserPlus aria-hidden="true" className="size-4" />
                   )}
                   Connect
+                </Button>
+                <Button asChild variant="outline">
+                  <Link to="/messages/$peer" params={{ peer: profile.id }}>
+                    <MessageCircle aria-hidden="true" className="size-4" /> Message
+                  </Link>
                 </Button>
                 {declined ? (
                   <p className="self-center text-xs text-muted-foreground">

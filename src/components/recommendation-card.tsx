@@ -50,7 +50,15 @@ export function RecommendationCard({
           />
         </span>
         <div className="min-w-0 flex-1">
-          <h3 className="truncate text-base font-bold">{person.name}</h3>
+          <h3 className="truncate text-base font-bold">
+            <Link
+              to="/people/$id"
+              params={{ id: person.id }}
+              className="focus-ring hover:text-primary"
+            >
+              {person.name}
+            </Link>
+          </h3>
           <p className="truncate text-sm text-muted-foreground">
             {person.role} · {person.company}
           </p>
@@ -121,6 +129,11 @@ export function RecommendationCard({
       ) : null}
 
       <div className="mt-5 flex flex-wrap gap-2 pt-1">
+        <Button asChild variant="outline" className="flex-1">
+          <Link to="/people/$id" params={{ id: person.id }}>
+            View profile
+          </Link>
+        </Button>
         <Button
           onClick={onConnect}
           variant={connected ? "secondary" : "default"}

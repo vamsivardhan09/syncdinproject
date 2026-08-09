@@ -207,8 +207,9 @@ function Dashboard() {
                         {item.kind}
                       </Badge>
                       <Badge variant="secondary" className="font-mono">
-                        {item.match}% match
+                        {scoreFor(person.id)}% match
                       </Badge>
+
                     </div>
                     <div className="mt-4 flex items-start gap-3">
                       <img

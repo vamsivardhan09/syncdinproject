@@ -453,7 +453,7 @@ function Twin() {
                       className="mt-2"
                       variant={done ? "secondary" : "default"}
                       disabled={done}
-                      onClick={() => startSync(source.id, "training")}
+                      onClick={() => setTeach(source.name)}
                     >
                       {done ? (
                         <>

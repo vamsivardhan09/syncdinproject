@@ -1,11 +1,23 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useRef, useState } from "react";
-import { motion } from "motion/react";
-import { Check, FileText, Github, Globe, Link2, Linkedin, RotateCcw, Upload } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
+import {
+  ArrowRight,
+  Check,
+  FileText,
+  Github,
+  Globe,
+  Link2,
+  Linkedin,
+  Radar,
+  RotateCcw,
+  Upload,
+} from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/app-shell";
 import { ConnectSyncModal } from "@/components/connect-sync-modal";
 import { TwinIntelligencePanel } from "@/components/twin-intelligence";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -18,10 +30,13 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { importSources, trainingSources } from "@/lib/demo-data";
+import { SOURCE_SIGNALS } from "@/lib/matching";
 import { syncFlows, type SyncFlow } from "@/lib/sync-flows";
 import { analyzePortfolio, analyzeResume } from "@/lib/twin-analyze.functions";
+import { openGaps, twinKnowledge } from "@/lib/twin-knowledge";
 import { useTwin } from "@/lib/twin-store";
 import { cn } from "@/lib/utils";
+
 
 
 export const Route = createFileRoute("/_authenticated/twin")({

@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Bell, LogOut, RotateCcw, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/app-shell";
@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
+import { getEmailPreference, setEmailPreference } from "@/lib/real-people";
 import { useTwin } from "@/lib/twin-store";
 
 export const Route = createFileRoute("/_authenticated/settings")({
@@ -63,6 +64,12 @@ function Settings() {
   const [values, setValues] = useState<Record<string, boolean>>(
     Object.fromEntries(toggles.map((t) => [t.id, t.on])),
   );
+  const [emailPref, setEmailPref] = useState(true);
+  const [savingPref, setSavingPref] = useState(false);
+
+  useEffect(() => {
+    void getEmailPreference().then(setEmailPref);
+  }, []);
 
   async function signOut() {
     await supabase.auth.signOut();

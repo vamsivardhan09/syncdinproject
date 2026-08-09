@@ -292,12 +292,12 @@ export function RealPeopleDirectory() {
         </p>
       ) : (
         <ul className="mt-2 divide-y divide-border">
-          {others.map((profile) => (
-            <PersonRow
-              key={profile.id}
-              profile={profile}
+          {others.map((entry) => (
+            <RankedRow
+              key={entry.profile.id}
+              entry={entry}
               right={
-                sent.has(profile.id) ? (
+                sent.has(entry.profile.id) ? (
                   <Badge variant="secondary" className="shrink-0 gap-1">
                     <Clock aria-hidden="true" className="size-3.5" /> Pending
                   </Badge>
@@ -306,10 +306,10 @@ export function RealPeopleDirectory() {
                     size="sm"
                     variant="outline"
                     className="shrink-0"
-                    disabled={busy === profile.id}
-                    onClick={() => void connect(profile)}
+                    disabled={busy === entry.profile.id}
+                    onClick={() => void connect(entry)}
                   >
-                    {busy === profile.id ? (
+                    {busy === entry.profile.id ? (
                       <Loader2 aria-hidden="true" className="size-4 animate-spin" />
                     ) : (
                       <UserPlus aria-hidden="true" className="size-4" />
@@ -320,6 +320,7 @@ export function RealPeopleDirectory() {
               }
             />
           ))}
+
         </ul>
       )}
     </section>

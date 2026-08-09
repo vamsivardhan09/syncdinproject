@@ -13,12 +13,13 @@ export const saveMyLocation = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => Coords.parse(input))
   .handler(async ({ data, context }) => {
-    const patch: Record<string, unknown> = {
+    const patch = {
       latitude: data.latitude,
       longitude: data.longitude,
       location_updated_at: new Date().toISOString(),
+      ...(data.label ? { location: data.label } : {}),
     };
-    if (data.label) patch["location"] = data.label;
+
 
     const { error } = await context.supabase
       .from("profiles")

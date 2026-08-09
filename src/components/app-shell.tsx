@@ -42,7 +42,13 @@ export function AppShell({ children }: { children: ReactNode }) {
     void supabase.auth.getUser().then(({ data }) => setEmail(data.user?.email ?? null));
   }, []);
 
+  // Debounced presence ping so ranking can favour genuinely active members.
+  useEffect(() => {
+    void import("@/lib/real-people").then(({ touchActivity }) => void touchActivity());
+  }, [pathname]);
+
   useEffect(() => setOpen(false), [pathname]);
+
 
   async function signOut() {
     await supabase.auth.signOut();

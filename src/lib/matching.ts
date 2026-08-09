@@ -98,13 +98,19 @@ function tokens(values: string[]): Set<string> {
   return out;
 }
 
-/** Builds the user's Twin vector from the sources their Twin has ingested. */
+/**
+ * Builds the user's Twin vector from the sources their Twin has ingested plus
+ * any signals the Twin extracted from real material (résumé, portfolio, or the
+ * user's own words) and the user confirmed.
+ */
 export function buildTwinVector(input: {
   connectedSources: string[];
   trainedSources: string[];
   connectionsMade: string[];
   intelligence: number;
   headline?: string | null;
+  /** Confirmed skills / goals / interests stored on the user's profile. */
+  profileSignals?: string[];
 }): TwinVector {
   const sources = [...input.connectedSources, ...input.trainedSources];
   const signals = [...BASE_SIGNALS];
@@ -112,7 +118,12 @@ export function buildTwinVector(input: {
     const extra = SOURCE_SIGNALS[id];
     if (extra) signals.push(...extra);
   }
+  for (const signal of input.profileSignals ?? []) {
+    const value = signal.trim();
+    if (value) signals.push(value);
+  }
   if (input.headline) signals.push(input.headline);
+
   return {
     signals,
     intelligence: input.intelligence,

@@ -12,12 +12,14 @@ import {
   listIncomingRequests,
   listRealConnections,
   respondToRequest,
-  searchPeople,
+  searchPeopleRanked,
   sendConnectionRequest,
   type ConnectionProfile,
   type ConnectionRequest,
   type PublicProfile,
 } from "@/lib/real-people";
+import { rankProfiles, type RankedProfile } from "@/lib/twin-compatibility";
+import { useTwinVector } from "@/lib/use-twin-vector";
 
 function Avatar({ profile, size = 44 }: { profile: PublicProfile; size?: number }) {
   const name = displayName(profile);
@@ -69,6 +71,69 @@ function PersonRow({
   );
 }
 
+/** A ranked real member: computed fit, honest evidence, activity context. */
+function RankedRow({
+  entry,
+  right,
+}: {
+  entry: RankedProfile;
+  right?: React.ReactNode;
+}) {
+  const { profile, brief, activity } = entry;
+  const name = displayName(profile);
+  return (
+    <li className="py-3">
+      <div className="flex items-center gap-3">
+        <Link
+          to="/people/$id"
+          params={{ id: profile.id }}
+          className="focus-ring flex min-w-0 flex-1 items-center gap-3"
+        >
+          <Avatar profile={profile} />
+          <span className="min-w-0">
+            <span className="flex items-center gap-2">
+              <span className="truncate text-sm font-semibold">{name}</span>
+              {brief.hasEvidence ? (
+                <Badge variant="secondary" className="shrink-0 text-[11px]">
+                  {brief.score}% fit
+                </Badge>
+              ) : null}
+            </span>
+            <span className="block truncate text-xs text-muted-foreground">
+              {profile.headline || "Building their AI Twin"}
+              {profile.location ? ` · ${profile.location}` : ""}
+            </span>
+            <span
+              className={`mt-0.5 block text-[11px] ${
+                activity.tier === "live" || activity.tier === "today"
+                  ? "font-semibold text-primary"
+                  : "text-muted-foreground"
+              }`}
+            >
+              {activity.label}
+            </span>
+          </span>
+        </Link>
+        {right}
+      </div>
+      {brief.reasons.length > 0 ? (
+        <ul className="mt-1.5 ml-[56px] space-y-0.5">
+          {brief.reasons.slice(0, 2).map((reason) => (
+            <li key={reason} className="text-xs text-muted-foreground">
+              · {reason}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="mt-1.5 ml-[56px] text-xs text-muted-foreground">
+          Their Twin hasn&apos;t shared enough yet to compare signals.
+        </p>
+      )}
+    </li>
+  );
+}
+
+
 /** Real members: pending requests to answer, plus a searchable directory. */
 export function RealPeopleDirectory() {
   const [me, setMe] = useState<string | null>(null);
@@ -81,6 +146,8 @@ export function RealPeopleDirectory() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
 
+  const { vector, profile: myProfile } = useTwinVector();
+
   const load = useCallback((q: string) => {
     setError(null);
     void (async () => {
@@ -88,7 +155,7 @@ export function RealPeopleDirectory() {
         // Sequential on purpose: concurrent auth reads contend on the
         // browser session lock and can stall the whole panel.
         const uid = await currentUserId();
-        const list = await searchPeople(q);
+        const list = await searchPeopleRanked(q);
         const incoming = await listIncomingRequests();
 
         setMe(uid);
@@ -106,10 +173,12 @@ export function RealPeopleDirectory() {
     return () => clearTimeout(t);
   }, [load, query]);
 
-  async function connect(profile: PublicProfile) {
+  async function connect(entry: RankedProfile) {
+    const { profile, brief } = entry;
     setBusy(profile.id);
     try {
-      await sendConnectionRequest(profile.id);
+      // Carry the suggested opener so the request lands with real context.
+      await sendConnectionRequest(profile.id, brief.hasEvidence ? brief.opener : null);
       setSent((prev) => new Set(prev).add(profile.id));
       toast.success(`Request sent to ${displayName(profile)}.`);
     } catch (err) {
@@ -132,7 +201,12 @@ export function RealPeopleDirectory() {
     }
   }
 
-  const others = (people ?? []).filter((p) => p.id !== me);
+  const others = rankProfiles(
+    vector,
+    (people ?? []).filter((p) => p.id !== me),
+    { name: myProfile?.full_name ?? null, headline: myProfile?.headline ?? null },
+  );
+
 
   return (
     <section className="surface-card p-6">
@@ -218,12 +292,12 @@ export function RealPeopleDirectory() {
         </p>
       ) : (
         <ul className="mt-2 divide-y divide-border">
-          {others.map((profile) => (
-            <PersonRow
-              key={profile.id}
-              profile={profile}
+          {others.map((entry) => (
+            <RankedRow
+              key={entry.profile.id}
+              entry={entry}
               right={
-                sent.has(profile.id) ? (
+                sent.has(entry.profile.id) ? (
                   <Badge variant="secondary" className="shrink-0 gap-1">
                     <Clock aria-hidden="true" className="size-3.5" /> Pending
                   </Badge>
@@ -232,10 +306,10 @@ export function RealPeopleDirectory() {
                     size="sm"
                     variant="outline"
                     className="shrink-0"
-                    disabled={busy === profile.id}
-                    onClick={() => void connect(profile)}
+                    disabled={busy === entry.profile.id}
+                    onClick={() => void connect(entry)}
                   >
-                    {busy === profile.id ? (
+                    {busy === entry.profile.id ? (
                       <Loader2 aria-hidden="true" className="size-4 animate-spin" />
                     ) : (
                       <UserPlus aria-hidden="true" className="size-4" />
@@ -246,6 +320,7 @@ export function RealPeopleDirectory() {
               }
             />
           ))}
+
         </ul>
       )}
     </section>

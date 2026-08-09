@@ -18,6 +18,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          intro_note: string | null
           recipient_id: string
           requester_id: string
           responded_at: string | null
@@ -27,6 +28,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          intro_note?: string | null
           recipient_id: string
           requester_id: string
           responded_at?: string | null
@@ -36,6 +38,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          intro_note?: string | null
           recipient_id?: string
           requester_id?: string
           responded_at?: string | null
@@ -247,48 +250,66 @@ export type Database = {
           avatar_url: string | null
           created_at: string
           full_name: string | null
+          goals: string[]
           headline: string | null
           id: string
+          interests: string[]
           is_discoverable: boolean
+          last_active_at: string
           latitude: number | null
           location: string | null
           location_updated_at: string | null
           longitude: number | null
           onboarded: boolean
+          previous_active_at: string | null
+          public_card: boolean
           skills: string[]
           twin_intelligence: number
+          twin_summary: string | null
           updated_at: string
         }
         Insert: {
           avatar_url?: string | null
           created_at?: string
           full_name?: string | null
+          goals?: string[]
           headline?: string | null
           id: string
+          interests?: string[]
           is_discoverable?: boolean
+          last_active_at?: string
           latitude?: number | null
           location?: string | null
           location_updated_at?: string | null
           longitude?: number | null
           onboarded?: boolean
+          previous_active_at?: string | null
+          public_card?: boolean
           skills?: string[]
           twin_intelligence?: number
+          twin_summary?: string | null
           updated_at?: string
         }
         Update: {
           avatar_url?: string | null
           created_at?: string
           full_name?: string | null
+          goals?: string[]
           headline?: string | null
           id?: string
+          interests?: string[]
           is_discoverable?: boolean
+          last_active_at?: string
           latitude?: number | null
           location?: string | null
           location_updated_at?: string | null
           longitude?: number | null
           onboarded?: boolean
+          previous_active_at?: string | null
+          public_card?: boolean
           skills?: string[]
           twin_intelligence?: number
+          twin_summary?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -340,11 +361,30 @@ export type Database = {
           avatar_url: string
           created_at: string
           full_name: string
+          goals: string[]
           headline: string
           id: string
+          interests: string[]
+          last_active_at: string
           location: string
           skills: string[]
           twin_intelligence: number
+          twin_summary: string
+        }[]
+      }
+      get_shared_card: {
+        Args: { _id: string }
+        Returns: {
+          avatar_url: string
+          full_name: string
+          goals: string[]
+          headline: string
+          id: string
+          interests: string[]
+          location: string
+          skills: string[]
+          twin_intelligence: number
+          twin_summary: string
         }[]
       }
       list_my_connections: {
@@ -353,11 +393,15 @@ export type Database = {
           avatar_url: string
           connected_at: string
           full_name: string
+          goals: string[]
           headline: string
           id: string
+          interests: string[]
+          last_active_at: string
           location: string
           skills: string[]
           twin_intelligence: number
+          twin_summary: string
         }[]
       }
       search_people: {
@@ -372,6 +416,24 @@ export type Database = {
           twin_intelligence: number
         }[]
       }
+      search_people_ranked: {
+        Args: { _limit?: number; _q?: string }
+        Returns: {
+          avatar_url: string
+          created_at: string
+          full_name: string
+          goals: string[]
+          headline: string
+          id: string
+          interests: string[]
+          last_active_at: string
+          location: string
+          skills: string[]
+          twin_intelligence: number
+          twin_summary: string
+        }[]
+      }
+      touch_activity: { Args: never; Returns: string }
     }
     Enums: {
       [_ in never]: never

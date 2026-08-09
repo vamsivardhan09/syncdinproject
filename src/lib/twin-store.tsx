@@ -1,5 +1,14 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import type { ReactNode } from "react";
+import { toast } from "sonner";
 import { importSources, trainingSources, twinDimensions } from "@/lib/demo-data";
 
 const STORAGE_KEY = "syncdin.twin.v2";
@@ -21,6 +30,9 @@ const initialState: TwinState = {
   joinedNetworks: [],
 };
 
+/** Result of a persisted connection attempt — never a fake success. */
+export type ConnectResult = { ok: boolean; error?: string };
+
 type TwinContextValue = {
   state: TwinState;
   hydrated: boolean;
@@ -29,8 +41,10 @@ type TwinContextValue = {
   gainFor: (id: string) => number;
   connectSource: (id: string) => void;
   trainSource: (id: string) => void;
-  toggleConnection: (id: string) => void;
-  connect: (id: string) => void;
+  toggleConnection: (id: string) => Promise<ConnectResult>;
+  connect: (id: string) => Promise<ConnectResult>;
+  /** Peer slugs whose write is currently in flight. */
+  pendingConnections: string[];
   joinNetwork: (code: string) => void;
   completeOnboarding: () => void;
   reset: () => void;
@@ -63,9 +77,9 @@ async function persistSource(sourceId: string, kind: string, gain: number) {
 async function noteNewConnection(peerSlug: string) {
   try {
     const { noteConnection } = await import("@/lib/network-activity");
-    const { personById } = await import("@/lib/demo-data");
+    const { resolvePerson } = await import("@/lib/people-directory");
     await noteConnection(
-      personById(peerSlug)?.name ?? "a new match",
+      resolvePerson(peerSlug)?.name ?? "a new match",
       "Your Twins have exchanged context — open the conversation to take it from here.",
     );
   } catch {
@@ -77,28 +91,32 @@ async function noteNewConnection(peerSlug: string) {
 
 
 
-/** Mirrors a connection so it is still there after a refresh or device change. */
-async function persistConnection(peerSlug: string, remove = false) {
+/**
+ * Writes the connection to the database and reports the outcome, so the UI can
+ * show a real error instead of an optimistic success that vanishes on refresh.
+ */
+async function persistConnection(peerSlug: string, remove = false): Promise<ConnectResult> {
   try {
     const { supabase } = await import("@/integrations/supabase/client");
     const { data } = await supabase.auth.getUser();
-    if (!data.user) return;
+    if (!data.user) return { ok: false, error: "You need to be signed in to save connections." };
     if (remove) {
-      await supabase
+      const { error } = await supabase
         .from("connections")
         .delete()
         .eq("user_id", data.user.id)
         .eq("peer_slug", peerSlug);
-      return;
+      return error ? { ok: false, error: error.message } : { ok: true };
     }
-    await supabase
+    const { error } = await supabase
       .from("connections")
       .upsert(
         { user_id: data.user.id, peer_slug: peerSlug, status: "connected" },
         { onConflict: "user_id,peer_slug" },
       );
-  } catch {
-    /* offline or signed out — local state still holds */
+    return error ? { ok: false, error: error.message } : { ok: true };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "Network error." };
   }
 }
 
@@ -132,6 +150,11 @@ function union(a: string[] = [], b: string[] = []) {
 export function TwinProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<TwinState>(initialState);
   const [hydrated, setHydrated] = useState(false);
+  const [pendingConnections, setPending] = useState<string[]>([]);
+  const stateRef = useRef(state);
+  stateRef.current = state;
+
+
 
   useEffect(() => {
     try {
@@ -231,28 +254,63 @@ export function TwinProvider({ children }: { children: ReactNode }) {
   );
 
 
-  const toggleConnection = useCallback((id: string) => {
+  /**
+   * Adds a connection optimistically, then rolls it back and surfaces the real
+   * error if the database write fails. Never reports a success that isn't saved.
+   */
+  const connect = useCallback(async (id: string): Promise<ConnectResult> => {
+    let already = false;
     setState((prev) => {
-      const has = prev.connectionsMade.includes(id);
-      void persistConnection(id, has);
-      if (!has) void noteNewConnection(id);
-      return {
-        ...prev,
-        connectionsMade: has
-          ? prev.connectionsMade.filter((c) => c !== id)
-          : [...prev.connectionsMade, id],
-      };
+      already = prev.connectionsMade.includes(id);
+      return already ? prev : { ...prev, connectionsMade: [...prev.connectionsMade, id] };
     });
+    if (already) return { ok: true };
+    setPending((p) => (p.includes(id) ? p : [...p, id]));
+    const result = await persistConnection(id);
+    setPending((p) => p.filter((x) => x !== id));
+    if (!result.ok) {
+      setState((prev) => ({
+        ...prev,
+        connectionsMade: prev.connectionsMade.filter((c) => c !== id),
+      }));
+      toast.error("Couldn't save that connection", {
+        description: result.error ?? "Please try again.",
+      });
+      return result;
+    }
+    await noteNewConnection(id);
+    return result;
   }, []);
 
-  const connect = useCallback((id: string) => {
-    setState((prev) => {
-      if (prev.connectionsMade.includes(id)) return prev;
-      void persistConnection(id);
-      void noteNewConnection(id);
-      return { ...prev, connectionsMade: [...prev.connectionsMade, id] };
-    });
+  const disconnect = useCallback(async (id: string): Promise<ConnectResult> => {
+    setState((prev) => ({
+      ...prev,
+      connectionsMade: prev.connectionsMade.filter((c) => c !== id),
+    }));
+    setPending((p) => (p.includes(id) ? p : [...p, id]));
+    const result = await persistConnection(id, true);
+    setPending((p) => p.filter((x) => x !== id));
+    if (!result.ok) {
+      setState((prev) => ({
+        ...prev,
+        connectionsMade: prev.connectionsMade.includes(id)
+          ? prev.connectionsMade
+          : [...prev.connectionsMade, id],
+      }));
+      toast.error("Couldn't remove that connection", {
+        description: result.error ?? "Please try again.",
+      });
+    }
+    return result;
   }, []);
+
+  const toggleConnection = useCallback(
+    (id: string): Promise<ConnectResult> =>
+      stateRef.current.connectionsMade.includes(id) ? disconnect(id) : connect(id),
+    [connect, disconnect],
+  );
+
+
 
 
   const joinNetwork = useCallback((code: string) => {
@@ -295,6 +353,7 @@ export function TwinProvider({ children }: { children: ReactNode }) {
       trainSource,
       toggleConnection,
       connect,
+      pendingConnections,
       joinNetwork,
       completeOnboarding,
       reset,

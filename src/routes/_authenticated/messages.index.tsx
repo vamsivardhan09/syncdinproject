@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { demoPeople, photoFor } from "@/lib/demo-data";
+import { resolvePeople } from "@/lib/people-directory";
 import { useTwin } from "@/lib/twin-store";
 
 export const Route = createFileRoute("/_authenticated/messages/")({
@@ -35,7 +36,7 @@ function Inbox() {
   const [previews, setPreviews] = useState<Record<string, { body: string; at: string }>>({});
 
   const threads = useMemo(() => {
-    const connected = demoPeople.filter((p) => state.connectionsMade.includes(p.id));
+    const connected = resolvePeople(state.connectionsMade);
     const base = connected.length > 0 ? connected : demoPeople.slice(0, 4);
     const q = query.trim().toLowerCase();
     if (!q) return base;

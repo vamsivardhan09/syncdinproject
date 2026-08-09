@@ -25,7 +25,7 @@ import {
   type Attendee,
 } from "@/lib/event-network";
 import { buildTwinVector, rankCandidates } from "@/lib/matching";
-import { diffTopScores, recordActivities, saveConnection } from "@/lib/network-activity";
+import { diffTopScores, recordActivities } from "@/lib/network-activity";
 import { useTwin } from "@/lib/twin-store";
 import { cn } from "@/lib/utils";
 
@@ -145,17 +145,17 @@ function NetworkRoom() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [network.code, hydrated]);
 
-  function handleConnect(person: Attendee, intro: string) {
-    connect(person.id);
-    void saveConnection(person.id);
-    void recordActivities([
+  async function handleConnect(person: Attendee, intro: string) {
+    const result = await connect(person.id);
+    if (!result.ok) return; // the store already surfaced the real error
+    await recordActivities([
       {
         title: `${person.name.split(" ")[0]}'s Twin suggested a collaboration`,
         body: intro.slice(0, 240),
       },
     ]);
     toast.success(`Connected with ${person.name}`, {
-      description: "Your Twin saved the suggested introduction.",
+      description: "Saved to your connections — your Twin kept the suggested introduction.",
     });
   }
 

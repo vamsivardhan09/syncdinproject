@@ -11,14 +11,15 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
-import { importSources, personById, photoFor, trainingSources } from "@/lib/demo-data";
+import { importSources, photoFor, trainingSources } from "@/lib/demo-data";
+import { resolvePerson } from "@/lib/people-directory";
 import { generateTwinReply } from "@/lib/twin-chat.functions";
 import { useTwin } from "@/lib/twin-store";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/messages/$peer")({
   loader: ({ params }) => {
-    const person = personById(params.peer);
+    const person = resolvePerson(params.peer);
     if (!person) throw notFound();
     return { name: person.name, role: person.role, company: person.company };
   },
@@ -55,7 +56,7 @@ type Message = {
 function Conversation() {
   const { peer } = Route.useParams();
   const { state, intelligence, toggleConnection } = useTwin();
-  const person = personById(peer)!;
+  const person = resolvePerson(peer)!;
   const runTwin = useServerFn(generateTwinReply);
 
   const [userId, setUserId] = useState<string | null>(null);
@@ -179,7 +180,7 @@ function Conversation() {
     if (!body || !userId || thinking) return;
     setDraft("");
     await persist("user", body);
-    if (!state.connectionsMade.includes(peer)) toggleConnection(peer);
+    if (!state.connectionsMade.includes(peer)) void toggleConnection(peer);
     const base = [...transcriptOf(messages), { sender: "user" as const, body }];
     const reply = await twinTurn("peer", base);
     if (reply && autopilot) {
@@ -189,6 +190,11 @@ function Conversation() {
 
   async function letTwinsTalk() {
     if (!userId || thinking) return;
+    // Opening the Twin-to-Twin conversation is also a real connection.
+    if (!state.connectionsMade.includes(peer)) {
+      const result = await toggleConnection(peer);
+      if (!result.ok) return;
+    }
     const base = transcriptOf(messages);
     if (base.length === 0) {
       const opener = await twinTurn("user", []);

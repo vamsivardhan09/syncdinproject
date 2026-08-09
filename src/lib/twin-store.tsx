@@ -75,25 +75,6 @@ async function noteNewConnection(peerSlug: string) {
 
 
 
-/** Reads persisted Twin progress so a refresh or new device keeps the loop. */
-async function readRemoteState() {
-  const { supabase } = await import("@/integrations/supabase/client");
-  const { data: auth } = await supabase.auth.getUser();
-  if (!auth.user) return null;
-  const [sources, connections] = await Promise.all([
-    supabase.from("twin_sources").select("source_id, kind"),
-    supabase.from("connections").select("peer_slug"),
-  ]);
-  return {
-    connectedSources: (sources.data ?? [])
-      .filter((s) => s.kind === "import")
-      .map((s) => s.source_id),
-    trainedSources: (sources.data ?? [])
-      .filter((s) => s.kind === "training")
-      .map((s) => s.source_id),
-    connectionsMade: (connections.data ?? []).map((c) => c.peer_slug),
-  };
-}
 
 
 /** Mirrors a connection so it is still there after a refresh or device change. */

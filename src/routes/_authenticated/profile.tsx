@@ -91,7 +91,10 @@ function Profile() {
   );
 
   const knowledge = useMemo(
-    () => twinKnowledge([...state.connectedSources, ...state.trainedSources]),
+    () =>
+      twinKnowledge([...state.connectedSources, ...state.trainedSources]).filter(
+        (g) => g.items.length > 0,
+      ),
     [state.connectedSources, state.trainedSources],
   );
 

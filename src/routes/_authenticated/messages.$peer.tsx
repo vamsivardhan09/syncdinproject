@@ -179,7 +179,7 @@ function Conversation() {
     if (!body || !userId || thinking) return;
     setDraft("");
     await persist("user", body);
-    if (!state.connectionsMade.includes(peer)) toggleConnection(peer);
+    if (!state.connectionsMade.includes(peer)) void toggleConnection(peer);
     const base = [...transcriptOf(messages), { sender: "user" as const, body }];
     const reply = await twinTurn("peer", base);
     if (reply && autopilot) {

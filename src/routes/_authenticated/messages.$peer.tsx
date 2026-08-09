@@ -13,7 +13,7 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { importSources, photoFor, trainingSources, type DemoPerson } from "@/lib/demo-data";
 import { personFromProfile, resolvePerson } from "@/lib/people-directory";
-import { getPublicProfile, isRealUserId } from "@/lib/real-people";
+import { getPublicProfile, isRealUserId, type PublicProfile } from "@/lib/real-people";
 
 import { sendRelationshipEmail } from "@/lib/relationship-email.functions";
 import { generateTwinReply } from "@/lib/twin-chat.functions";
@@ -60,6 +60,8 @@ export const Route = createFileRoute("/_authenticated/messages/$peer")({
 
 type Message = {
   id: string;
+  user_id: string;
+  recipient_id: string | null;
   peer_slug: string;
   sender: string;
   body: string;
@@ -70,6 +72,7 @@ function Conversation() {
   const { peer } = Route.useParams();
   const { state, intelligence, toggleConnection } = useTwin();
   const demoPerson = resolvePerson(peer);
+  const [realProfile, setRealProfile] = useState<PublicProfile | null>(null);
   const [realPerson, setRealPerson] = useState<DemoPerson | null>(null);
   const [peerLoading, setPeerLoading] = useState(demoPerson === null);
   const person = demoPerson ?? realPerson;
@@ -117,6 +120,7 @@ function Conversation() {
       try {
         const profileRow = await getPublicProfile(peer);
         if (cancelled) return;
+        setRealProfile(profileRow);
         setRealPerson(profileRow ? personFromProfile(profileRow) : null);
       } catch {
         if (!cancelled) setRealPerson(null);
@@ -150,11 +154,17 @@ function Conversation() {
     let cancelled = false;
     setLoading(true);
     void (async () => {
-      const { data } = await supabase
+      let request = supabase
         .from("messages")
-        .select("id, peer_slug, sender, body, created_at")
-        .eq("peer_slug", peer)
-        .order("created_at", { ascending: true });
+        .select("id, user_id, recipient_id, peer_slug, sender, body, created_at");
+      if (isRealUserId(peer)) {
+        request = request.or(
+          `and(user_id.eq.${userId},recipient_id.eq.${peer}),and(user_id.eq.${peer},recipient_id.eq.${userId}),and(user_id.eq.${userId},recipient_id.is.null,peer_slug.eq.${peer})`,
+        );
+      } else {
+        request = request.eq("user_id", userId).eq("peer_slug", peer);
+      }
+      const { data } = await request.order("created_at", { ascending: true });
       if (cancelled) return;
       setMessages(data ?? []);
       setLoading(false);
@@ -173,8 +183,14 @@ function Conversation() {
       if (!userId) return;
       const { data, error } = await supabase
         .from("messages")
-        .insert({ user_id: userId, peer_slug: peer, sender, body })
-        .select("id, peer_slug, sender, body, created_at")
+        .insert({
+          user_id: userId,
+          recipient_id: sender === "user" && isRealUserId(peer) ? peer : null,
+          peer_slug: peer,
+          sender,
+          body,
+        })
+        .select("id, user_id, recipient_id, peer_slug, sender, body, created_at")
         .single();
       if (error) {
         toast.error("Could not save that message.");
@@ -337,8 +353,8 @@ function Conversation() {
         <section className="surface-card mt-3 p-5 sm:p-6">
           <div className="flex flex-wrap items-start gap-4">
             <img
-              src={photoFor(person.id)}
-              alt=""
+              src={realProfile?.avatar_url || photoFor(person.id)}
+              alt={person.name}
               className="size-16 rounded-full object-cover sm:size-20"
             />
             <div className="min-w-0 flex-1">
@@ -405,12 +421,15 @@ function Conversation() {
                   key={m.id}
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className={cn("flex", m.sender === "user" ? "justify-end" : "justify-start")}
+                    className={cn(
+                      "flex",
+                      m.user_id === userId && m.sender === "user" ? "justify-end" : "justify-start",
+                    )}
                 >
                   <p
                     className={cn(
                       "max-w-[85%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed",
-                      m.sender === "user"
+                       m.user_id === userId && m.sender === "user"
                         ? "bg-primary text-primary-foreground"
                         : "bg-muted text-foreground",
                     )}

@@ -6,7 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { demoPeople, photoFor } from "@/lib/demo-data";
-import { resolvePeople } from "@/lib/people-directory";
+import { personFromProfile, resolvePeople } from "@/lib/people-directory";
+import { getPublicProfile, isRealUserId } from "@/lib/real-people";
 import { useTwin } from "@/lib/twin-store";
 
 export const Route = createFileRoute("/_authenticated/messages/")({
@@ -34,28 +35,42 @@ function Inbox() {
   const { state } = useTwin();
   const [query, setQuery] = useState("");
   const [previews, setPreviews] = useState<Record<string, { body: string; at: string }>>({});
+  const [realThreads, setRealThreads] = useState<ReturnType<typeof personFromProfile>[]>([]);
 
   const threads = useMemo(() => {
     const connected = resolvePeople(state.connectionsMade);
-    const base = connected.length > 0 ? connected : demoPeople.slice(0, 4);
+    const byId = new Map([...realThreads, ...connected].map((person) => [person.id, person]));
+    const base = byId.size > 0 ? Array.from(byId.values()) : demoPeople.slice(0, 4);
     const q = query.trim().toLowerCase();
     if (!q) return base;
     return base.filter((p) =>
       [p.name, p.role, p.company].some((v) => v.toLowerCase().includes(q)),
     );
-  }, [state.connectionsMade, query]);
+  }, [state.connectionsMade, realThreads, query]);
 
   useEffect(() => {
     let cancelled = false;
     void (async () => {
+      const { data: auth } = await supabase.auth.getUser();
+      const me = auth.user?.id;
+      if (!me) return;
       const { data } = await supabase
         .from("messages")
-        .select("peer_slug, body, created_at")
+        .select("user_id, recipient_id, peer_slug, body, created_at")
         .order("created_at", { ascending: true });
       if (cancelled || !data) return;
       const map: Record<string, { body: string; at: string }> = {};
-      for (const row of data) map[row.peer_slug] = { body: row.body, at: row.created_at };
+      const peerIds = new Set<string>();
+      for (const row of data) {
+        const threadId = row.user_id === me ? row.recipient_id || row.peer_slug : row.user_id;
+        map[threadId] = { body: row.body, at: row.created_at };
+        if (isRealUserId(threadId) && threadId !== me) peerIds.add(threadId);
+      }
       setPreviews(map);
+      const profiles = await Promise.all(Array.from(peerIds).map((id) => getPublicProfile(id)));
+      if (!cancelled) {
+        setRealThreads(profiles.filter((profile) => profile !== null).map(personFromProfile));
+      }
     })();
     return () => {
       cancelled = true;

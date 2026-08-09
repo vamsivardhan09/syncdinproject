@@ -294,6 +294,11 @@ function MemberProfile() {
                 >
                   <X aria-hidden="true" className="size-4" /> Decline
                 </Button>
+                <Button asChild variant="outline">
+                  <Link to="/messages/$peer" params={{ peer: profile.id }}>
+                    <MessageCircle aria-hidden="true" className="size-4" /> Message
+                  </Link>
+                </Button>
               </>
             ) : outgoing ? (
               <>
@@ -306,6 +311,11 @@ function MemberProfile() {
                   onClick={() => void act(() => cancelRequest(request.id), "Request withdrawn.")}
                 >
                   Withdraw
+                </Button>
+                <Button asChild variant="outline">
+                  <Link to="/messages/$peer" params={{ peer: profile.id }}>
+                    <MessageCircle aria-hidden="true" className="size-4" /> Message
+                  </Link>
                 </Button>
               </>
             ) : (

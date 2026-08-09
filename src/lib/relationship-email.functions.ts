@@ -12,6 +12,11 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 export type RelationshipEmailRequest = {
   kind: "connection_request" | "connection_accepted" | "new_message" | "strong_match" | "event_match";
   recipientId: string;
+  /**
+   * For match emails the person shown in the email is the matched member, not
+   * the caller. Ignored for actor-driven kinds, where the actor is the caller.
+   */
+  subjectId?: string | null;
   /** Path the CTA deep-links to inside SyncdIn. */
   path: string;
   /** Stable key for this event so retries/refreshes cannot double-send. */

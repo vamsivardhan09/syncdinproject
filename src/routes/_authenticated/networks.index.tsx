@@ -103,10 +103,17 @@ function Networks() {
 
               <Button asChild className="mt-5 w-full">
                 <Link to="/networks/$code" params={{ code: n.code }}>
-                  {joined ? "Open network" : "Join and let my Twin analyze it"}
+                  {n.mode === "live"
+                    ? joined
+                      ? "Open Event Radar"
+                      : "Join event network"
+                    : joined
+                      ? "Open network"
+                      : "Join and let my Twin analyze it"}
                   <ArrowRight aria-hidden="true" className="size-4" />
                 </Link>
               </Button>
+
             </motion.article>
           );
         })}

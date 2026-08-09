@@ -26,6 +26,8 @@ import {
   todaysOpportunities,
   trendingDiscussions,
 } from "@/lib/feed-data";
+import { buildTwinVector, rankCandidates } from "@/lib/matching";
+import { nextBestAction } from "@/lib/twin-knowledge";
 import { useTwin } from "@/lib/twin-store";
 import { cn } from "@/lib/utils";
 

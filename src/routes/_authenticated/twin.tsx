@@ -89,6 +89,10 @@ function Twin() {
   const [run, setRun] = useState<AnalysisRun | null>(null);
   const [portfolioOpen, setPortfolioOpen] = useState(false);
   const [portfolioUrl, setPortfolioUrl] = useState("");
+  const [urlAsk, setUrlAsk] = useState<"linkedin" | "github" | null>(null);
+  const [askValue, setAskValue] = useState("");
+  const [teach, setTeach] = useState<string | null>(null);
+
   const [result, setResult] = useState<{
     name: string;
     signals: number;

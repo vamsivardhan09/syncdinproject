@@ -120,30 +120,32 @@ async function persistConnection(peerSlug: string, remove = false): Promise<Conn
   }
 }
 
-/** Reads persisted sources and connections so the Twin survives a refresh. */
+/**
+ * Reads the server's copy of the Twin. The database is the source of truth:
+ * a row deleted on the server must not come back from this device's cache.
+ */
 async function loadRemoteState(): Promise<Partial<TwinState> | null> {
   try {
     const { supabase } = await import("@/integrations/supabase/client");
     const { data } = await supabase.auth.getUser();
     if (!data.user) return null;
-    const [sources, connections] = await Promise.all([
+    const [sources, connections, profile] = await Promise.all([
       supabase.from("twin_sources").select("source_id, kind"),
       supabase.from("connections").select("peer_slug"),
+      supabase.from("profiles").select("onboarded").eq("id", data.user.id).maybeSingle(),
     ]);
     const rows = sources.data ?? [];
     return {
       connectedSources: rows.filter((r) => r.kind === "import").map((r) => r.source_id),
       trainedSources: rows.filter((r) => r.kind === "training").map((r) => r.source_id),
       connectionsMade: (connections.data ?? []).map((r) => r.peer_slug),
+      onboarded: profile.data?.onboarded ?? false,
     };
   } catch {
     return null;
   }
 }
 
-function union(a: string[] = [], b: string[] = []) {
-  return Array.from(new Set([...a, ...b]));
-}
 
 
 

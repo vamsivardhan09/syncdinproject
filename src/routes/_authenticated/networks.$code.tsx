@@ -50,8 +50,22 @@ export const Route = createFileRoute("/_authenticated/networks/$code")({
       ],
     };
   },
-  component: NetworkRoom,
+  component: NetworkRoute,
 });
+
+function NetworkRoute() {
+  const { network } = Route.useLoaderData();
+  return (
+    <AppShell>
+      <Button asChild variant="ghost" size="sm" className="-ml-2">
+        <Link to="/networks">
+          <ArrowLeft aria-hidden="true" className="size-4" /> All networks
+        </Link>
+      </Button>
+      {network.mode === "live" ? <EventRadar network={network} /> : <NetworkRoom />}
+    </AppShell>
+  );
+}
 
 const ANALYSIS_STEPS = [
   "Reading attendee Twin profiles",
@@ -65,6 +79,7 @@ type Ranked = { candidate: Attendee; score: number; reasons: string[]; topTopic:
 function NetworkRoom() {
   const { network } = Route.useLoaderData();
   const { state, intelligence, connect, joinNetwork, hydrated } = useTwin();
+
   const [phase, setPhase] = useState<"analyzing" | "ready">("analyzing");
   const [step, setStep] = useState(0);
   const [filter, setFilter] = useState<string>("All");

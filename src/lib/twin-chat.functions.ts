@@ -1,11 +1,29 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { personById } from "@/lib/demo-data";
+
+const PeerProfile = z.object({
+  name: z.string().min(1),
+  role: z.string().default(""),
+  company: z.string().default(""),
+  kind: z.string().default("professional"),
+  location: z.string().default(""),
+  bio: z.string().default(""),
+  skills: z.array(z.string()).default([]),
+  interests: z.array(z.string()).default([]),
+  goals: z.array(z.string()).default([]),
+  projects: z.array(z.string()).default([]),
+  reasons: z.array(z.string()).default([]),
+  suggestedCollaboration: z.string().default(""),
+});
 
 const ReplyInput = z.object({
   /** Which twin is speaking: the matched person's twin, or the signed-in user's twin. */
   speaker: z.enum(["peer", "user"]),
   peerId: z.string().min(1),
+  /** Seeded attendees are not in the demo directory, so their profile travels with the call. */
+  peerProfile: PeerProfile.optional(),
   userContext: z.object({
     name: z.string().default("the user"),
     headline: z.string().default(""),
@@ -19,13 +37,15 @@ const ReplyInput = z.object({
 });
 
 export const generateTwinReply = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => ReplyInput.parse(input))
   .handler(async ({ data }) => {
-    const person = personById(data.peerId);
+    const person = data.peerProfile ?? personById(data.peerId);
     if (!person) throw new Error("Unknown match");
 
     const key = process.env["LOVABLE_API_KEY"];
     if (!key) throw new Error("AI is not configured");
+
 
     const u = data.userContext;
     const peerBrief = [

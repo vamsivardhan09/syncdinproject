@@ -57,12 +57,41 @@ function greeting() {
   return "Good evening";
 }
 
-const stats = [
-  { id: "recruiters", label: "Recruiters found you", value: 8, icon: Briefcase, tone: "text-info" },
-  { id: "founders", label: "Founder matches", value: 5, icon: Users, tone: "text-primary" },
-  { id: "mentors", label: "Mentors available", value: 3, icon: BrainCircuit, tone: "text-success" },
-  { id: "convos", label: "Conversations suggested", value: 12, icon: MessageCircle, tone: "text-warning" },
-];
+/** Counts come from the demo network, not from invented traffic numbers. */
+function demoStats() {
+  const count = (kinds: string[]) => demoPeople.filter((p) => kinds.includes(p.kind)).length;
+  return [
+    {
+      id: "recruiters",
+      label: "Recruiters in your demo network",
+      value: count(["Recruiter"]),
+      icon: Briefcase,
+      tone: "text-info",
+    },
+    {
+      id: "founders",
+      label: "Founder matches",
+      value: count(["Founder", "Investor"]),
+      icon: Users,
+      tone: "text-primary",
+    },
+    {
+      id: "mentors",
+      label: "Mentors available",
+      value: count(["Mentor"]),
+      icon: BrainCircuit,
+      tone: "text-success",
+    },
+    {
+      id: "engineers",
+      label: "Engineers worth meeting",
+      value: count(["AI Engineer", "Software Engineer"]),
+      icon: MessageCircle,
+      tone: "text-warning",
+    },
+  ];
+}
+
 
 function Dashboard() {
   const { state, intelligence, dimensions, toggleConnection } = useTwin();

@@ -224,21 +224,29 @@ export function NetworkMap() {
     const maps = window.google.maps;
 
     const markers = people.map((p) => {
+      let photo: string | undefined;
       const marker = new maps.Marker({
         position: { lat: p.latitude, lng: p.longitude },
-        icon: pillIcon(maps, `${p.match}%`, false),
-        title: `${p.name} — ${p.location}`,
+        icon: avatarIcon(maps, p, false),
+        title: `${p.name} — ${p.role}, ${p.company} · ${p.match}% match`,
+      });
+      // Upgrade to the real profile photo once it can be rasterised.
+      void photoData(p.photo_url).then((data) => {
+        if (!data) return;
+        photo = data;
+        marker.setIcon(avatarIcon(maps, p, false, photo));
       });
       marker.addListener("click", () => {
-        marker.setIcon(pillIcon(maps, `${p.match}%`, true));
+        marker.setIcon(avatarIcon(maps, p, true, photo));
         infoRef.current?.setContent(infoContent(p));
         infoRef.current?.open({ map, anchor: marker });
         maps.event.addListenerOnce(infoRef.current!, "closeclick", () =>
-          marker.setIcon(pillIcon(maps, `${p.match}%`, false)),
+          marker.setIcon(avatarIcon(maps, p, false, photo)),
         );
       });
       return marker;
     });
+
 
     clustererRef.current?.clearMarkers();
     clustererRef.current = new MarkerClusterer({ map, markers });

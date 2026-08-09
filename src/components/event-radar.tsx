@@ -29,7 +29,7 @@ import {
   type RadarMatch,
 } from "@/lib/event-radar";
 import { buildTwinVector } from "@/lib/matching";
-import { recordActivities, saveConnection } from "@/lib/network-activity";
+import { recordActivities } from "@/lib/network-activity";
 import { useTwin } from "@/lib/twin-store";
 import { cn } from "@/lib/utils";
 
@@ -112,17 +112,17 @@ export function EventRadar({ network }: { network: EventNetwork }) {
     }, 2500);
   }, [network.name, topFive]);
 
-  function handleConnect(match: RadarMatch, intro: string) {
-    connect(match.candidate.id);
-    void saveConnection(match.candidate.id);
-    void recordActivities([
+  async function handleConnect(match: RadarMatch, intro: string) {
+    const result = await connect(match.candidate.id);
+    if (!result.ok) return; // the store already surfaced the real error
+    await recordActivities([
       {
         title: `${match.candidate.name.split(" ")[0]}'s Twin is ready to meet at ${network.name}`,
         body: intro.slice(0, 240),
       },
     ]);
     toast.success(`Connected with ${match.candidate.name}`, {
-      description: "Your Twin saved the suggested opener.",
+      description: "Saved to your connections — your Twin kept the suggested opener.",
     });
   }
 

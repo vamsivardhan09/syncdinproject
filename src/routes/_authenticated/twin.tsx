@@ -355,8 +355,11 @@ function Twin() {
       <section className="mt-10">
         <h2 className="text-xl font-bold">Teach it how you think</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Connect an AI assistant so your Twin borrows your reasoning and your voice.
+          Connect an AI assistant so your Twin borrows your reasoning and your voice. In this
+          prototype these are demo integrations — SyncdIn never reads private chat history without an
+          official export or API permission.
         </p>
+
         <div className="mt-5 space-y-4">
           {trainingSources.map((source) => {
             const done = state.trainedSources.includes(source.id);

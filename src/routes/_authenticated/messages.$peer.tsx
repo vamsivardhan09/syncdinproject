@@ -288,6 +288,38 @@ function Conversation() {
     const next = last.sender === "user" ? "peer" : "user";
     await twinTurn(next, base);
   }
+  if (!person) {
+    return (
+      <AppShell>
+        <div className="mx-auto max-w-3xl">
+          <Button asChild variant="ghost" size="sm" className="-ml-2">
+            <Link to="/messages">
+              <ArrowLeft aria-hidden="true" className="size-4" /> All conversations
+            </Link>
+          </Button>
+          <section className="surface-card mt-3 p-8 text-center">
+            {peerLoading ? (
+              <>
+                <Loader2 aria-hidden="true" className="mx-auto size-6 animate-spin text-primary" />
+                <p className="mt-3 text-sm text-muted-foreground">Loading this conversation…</p>
+              </>
+            ) : (
+              <>
+                <h1 className="text-xl font-extrabold">Conversation unavailable</h1>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  This member is no longer discoverable, so their Twin can&apos;t talk right now.
+                </p>
+                <Button asChild className="mt-5">
+                  <Link to="/network">Find people to meet</Link>
+                </Button>
+              </>
+            )}
+          </section>
+        </div>
+      </AppShell>
+    );
+  }
+
 
   const thinkingLabel =
     thinking === "peer" ? `${person.name.split(" ")[0]}'s Twin is typing…` : "Your Twin is typing…";

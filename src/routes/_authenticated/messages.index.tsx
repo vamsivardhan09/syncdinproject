@@ -62,7 +62,8 @@ function Inbox() {
       const map: Record<string, { body: string; at: string }> = {};
       const peerIds = new Set<string>();
       for (const row of data) {
-        const threadId = row.user_id === me ? row.recipient_id || row.peer_slug : row.user_id;
+        const threadId: string =
+          row.user_id === me ? (row.recipient_id ?? row.peer_slug) : row.user_id;
         map[threadId] = { body: row.body, at: row.created_at };
         if (isRealUserId(threadId) && threadId !== me) peerIds.add(threadId);
       }

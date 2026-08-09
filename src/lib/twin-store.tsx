@@ -59,6 +59,57 @@ async function persistSource(sourceId: string, kind: string, gain: number) {
   }
 }
 
+/** Mirrors a connection to the backend and logs it as activity. */
+async function persistConnection(peerSlug: string) {
+  try {
+    const { saveConnection, noteConnection } = await import("@/lib/network-activity");
+    const { personById } = await import("@/lib/demo-data");
+    await saveConnection(peerSlug);
+    await noteConnection(
+      personById(peerSlug)?.name ?? "a new match",
+      "Your Twins have exchanged context — open the conversation to take it from here.",
+    );
+  } catch {
+    /* offline or signed out */
+  }
+}
+
+async function dropConnection(peerSlug: string) {
+  try {
+    const { supabase } = await import("@/integrations/supabase/client");
+    const { data } = await supabase.auth.getUser();
+    if (!data.user) return;
+    await supabase
+      .from("connections")
+      .delete()
+      .eq("user_id", data.user.id)
+      .eq("peer_slug", peerSlug);
+  } catch {
+    /* offline or signed out */
+  }
+}
+
+/** Reads persisted Twin progress so a refresh or new device keeps the loop. */
+async function readRemoteState() {
+  const { supabase } = await import("@/integrations/supabase/client");
+  const { data: auth } = await supabase.auth.getUser();
+  if (!auth.user) return null;
+  const [sources, connections] = await Promise.all([
+    supabase.from("twin_sources").select("source_id, kind"),
+    supabase.from("connections").select("peer_slug"),
+  ]);
+  return {
+    connectedSources: (sources.data ?? [])
+      .filter((s) => s.kind === "import")
+      .map((s) => s.source_id),
+    trainedSources: (sources.data ?? [])
+      .filter((s) => s.kind === "training")
+      .map((s) => s.source_id),
+    connectionsMade: (connections.data ?? []).map((c) => c.peer_slug),
+  };
+}
+
+
 /** Mirrors a connection so it is still there after a refresh or device change. */
 async function persistConnection(peerSlug: string, remove = false) {
   try {

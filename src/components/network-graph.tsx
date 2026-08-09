@@ -1,22 +1,32 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { motion } from "motion/react";
 import { MessageCircle, Network, UserRound, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { demoPeople, photoFor, type DemoPerson } from "@/lib/demo-data";
-import { buildTwinVector, rankCandidates } from "@/lib/matching";
+import { rankCandidates } from "@/lib/matching";
 import { resolvePeople } from "@/lib/people-directory";
+import {
+  currentUserId,
+  displayName,
+  initialsOf,
+  listRealConnections,
+  searchPeopleRanked,
+  type PublicProfile,
+} from "@/lib/real-people";
+import { rankProfiles } from "@/lib/twin-compatibility";
+import { useTwinVector } from "@/lib/use-twin-vector";
 import { useTwin } from "@/lib/twin-store";
 import { cn } from "@/lib/utils";
 
-type GraphNode = {
-  person: DemoPerson;
-  score: number;
-  connected: boolean;
-  x: number;
-  y: number;
-};
+/** A node is either a real SyncdIn account or a demo persona. */
+type NodePerson =
+  | { kind: "real"; id: string; name: string; subtitle: string; photo: string | null }
+  | { kind: "demo"; id: string; name: string; subtitle: string; photo: string };
+
+type GraphItem = { person: NodePerson; score: number; connected: boolean };
+type GraphNode = GraphItem & { x: number; y: number };
 
 /** Stable pseudo-random in [0,1) so positions never reshuffle between renders. */
 function seeded(value: string) {
@@ -29,12 +39,12 @@ function seeded(value: string) {
 }
 
 /** Places people on two abstract rings — no geography, no device location. */
-function layout(people: { person: DemoPerson; score: number; connected: boolean }[]): GraphNode[] {
+function layout(people: GraphItem[]): GraphNode[] {
   const inner = people.filter((p) => p.connected);
   const outer = people.filter((p) => !p.connected);
 
   const place = (
-    list: typeof people,
+    list: GraphItem[],
     radiusX: number,
     radiusY: number,
     offset: number,
@@ -54,48 +64,126 @@ function layout(people: { person: DemoPerson; score: number; connected: boolean 
   return [...place(inner, 21, 24, 0.25), ...place(outer, 39, 38, 0.5)];
 }
 
+function toDemoNode(person: DemoPerson): NodePerson {
+  return {
+    kind: "demo",
+    id: person.id,
+    name: person.name,
+    subtitle: `${person.role} · ${person.company}`,
+    photo: photoFor(person.id),
+  };
+}
+
+function toRealNode(profile: PublicProfile): NodePerson {
+  return {
+    kind: "real",
+    id: profile.id,
+    name: displayName(profile),
+    subtitle: profile.headline || "Building their AI Twin",
+    photo: profile.avatar_url,
+  };
+}
+
+function NodeAvatar({
+  person,
+  className,
+}: {
+  person: NodePerson;
+  className?: string;
+}) {
+  if (person.photo) {
+    return <img src={person.photo} alt="" loading="lazy" className={cn("object-cover", className)} />;
+  }
+  return (
+    <span
+      aria-hidden="true"
+      className={cn(
+        "grid place-items-center bg-primary-soft text-xs font-bold text-primary",
+        className,
+      )}
+    >
+      {initialsOf(person.name)}
+    </span>
+  );
+}
+
 /**
  * SyncdIn-native network visualisation: an abstract canvas of avatar nodes
- * joined by relationship lines. Positions are seeded, never geographic.
+ * joined by relationship lines. Real accounts come first — their nodes deep-link
+ * to their actual profile. Positions are seeded, never geographic.
  */
 export function NetworkGraph() {
   const { state, intelligence } = useTwin();
+  const { vector, profile: myProfile } = useTwinVector();
   const [selected, setSelected] = useState<string | null>(null);
   const [mode, setMode] = useState<"all" | "connections">("all");
+  const [realConnections, setRealConnections] = useState<PublicProfile[]>([]);
+  const [realSuggested, setRealSuggested] = useState<PublicProfile[]>([]);
 
-  const vector = useMemo(
-    () =>
-      buildTwinVector({
-        connectedSources: state.connectedSources,
-        trainedSources: state.trainedSources,
-        connectionsMade: state.connectionsMade,
-        intelligence,
-      }),
-    [state, intelligence],
-  );
+  useEffect(() => {
+    let alive = true;
+    void (async () => {
+      try {
+        const me = await currentUserId();
+        if (!me) return;
+        const connections = await listRealConnections();
+        const discoverable = await searchPeopleRanked("", 24);
+        if (!alive) return;
+        const connectedIds = new Set(connections.map((c) => c.id));
+        setRealConnections(connections);
+        setRealSuggested(discoverable.filter((p) => p.id !== me && !connectedIds.has(p.id)));
+      } catch {
+        /* graph still renders with demo signal */
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [state.connectionsMade, intelligence]);
 
   const nodes = useMemo(() => {
     const ranked = rankCandidates(vector, demoPeople);
-    const scoreOf = (id: string) =>
-      ranked.find((r) => r.candidate.id === id)?.score ?? 0;
+    const scoreOf = (id: string) => ranked.find((r) => r.candidate.id === id)?.score ?? 0;
 
-    const connected = resolvePeople(state.connectionsMade).map((person) => ({
-      person,
+    const rankedReal = rankProfiles(vector, realSuggested, {
+      name: myProfile?.full_name ?? null,
+      headline: myProfile?.headline ?? null,
+    });
+
+    const realConnected: GraphItem[] = realConnections.map((profile) => ({
+      person: toRealNode(profile),
+      score: profile.twin_intelligence ?? 0,
+      connected: true,
+    }));
+
+    const demoConnected: GraphItem[] = resolvePeople(state.connectionsMade).map((person) => ({
+      person: toDemoNode(person),
       score: scoreOf(person.id) || person.match,
       connected: true,
     }));
-    const connectedIds = new Set(connected.map((c) => c.person.id));
 
-    const suggested =
-      mode === "connections"
-        ? []
-        : ranked
-            .filter((r) => !connectedIds.has(r.candidate.id))
-            .slice(0, 8)
-            .map((r) => ({ person: r.candidate, score: r.score, connected: false }));
+    const connectedIds = new Set([...realConnected, ...demoConnected].map((c) => c.person.id));
 
-    return layout([...connected, ...suggested]);
-  }, [vector, state.connectionsMade, mode]);
+    if (mode === "connections") {
+      return layout([...realConnected, ...demoConnected]);
+    }
+
+    const realSuggestedItems: GraphItem[] = rankedReal
+      .filter((entry) => !connectedIds.has(entry.profile.id))
+      .slice(0, 6)
+      .map((entry) => ({
+        person: toRealNode(entry.profile),
+        score: entry.brief.score,
+        connected: false,
+      }));
+
+    const demoSuggested: GraphItem[] = ranked
+      .filter((r) => !connectedIds.has(r.candidate.id))
+      .slice(0, Math.max(8 - realSuggestedItems.length, 2))
+      .map((r) => ({ person: toDemoNode(r.candidate), score: r.score, connected: false }));
+
+    return layout([...realConnected, ...demoConnected, ...realSuggestedItems, ...demoSuggested]);
+  }, [vector, myProfile, realConnections, realSuggested, state.connectionsMade, mode]);
 
   const active = nodes.find((n) => n.person.id === selected) ?? null;
   const connectedCount = nodes.filter((n) => n.connected).length;
@@ -192,18 +280,16 @@ export function NetworkGraph() {
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.35, delay: Math.min(i * 0.04, 0.4) }}
             onClick={() => setSelected((cur) => (cur === n.person.id ? null : n.person.id))}
-            aria-label={`${n.person.name}, ${n.person.role} at ${n.person.company}`}
+            aria-label={`${n.person.name}, ${n.person.subtitle}`}
             aria-pressed={selected === n.person.id}
             style={{ left: `${n.x}%`, top: `${n.y}%` }}
             className="focus-ring absolute -translate-x-1/2 -translate-y-1/2 rounded-full"
           >
             <span className="relative block">
-              <img
-                src={photoFor(n.person.id)}
-                alt=""
-                loading="lazy"
+              <NodeAvatar
+                person={n.person}
                 className={cn(
-                  "size-11 rounded-full object-cover ring-2 transition-transform hover:scale-110 sm:size-12",
+                  "size-11 rounded-full ring-2 transition-transform hover:scale-110 sm:size-12",
                   n.connected ? "ring-primary" : "ring-card",
                 )}
               />
@@ -231,16 +317,10 @@ export function NetworkGraph() {
             className="absolute inset-x-3 bottom-3 rounded-2xl border border-border bg-card/95 p-3 shadow-lift backdrop-blur sm:inset-x-auto sm:left-4 sm:w-72"
           >
             <div className="flex items-start gap-3">
-              <img
-                src={photoFor(active.person.id)}
-                alt=""
-                className="size-10 rounded-full object-cover"
-              />
+              <NodeAvatar person={active.person} className="size-10 rounded-full" />
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-bold">{active.person.name}</p>
-                <p className="truncate text-xs text-muted-foreground">
-                  {active.person.role} · {active.person.company}
-                </p>
+                <p className="truncate text-xs text-muted-foreground">{active.person.subtitle}</p>
                 <Badge
                   variant="secondary"
                   className="mt-1 bg-primary-soft font-mono text-[10px] text-primary"
@@ -263,11 +343,13 @@ export function NetworkGraph() {
                   <MessageCircle aria-hidden="true" className="size-4" /> Chat
                 </Link>
               </Button>
-              <Button asChild size="sm" variant="outline" className="flex-1">
-                <Link to="/network">
-                  <UserRound aria-hidden="true" className="size-4" /> Profile
-                </Link>
-              </Button>
+              {active.person.kind === "real" ? (
+                <Button asChild size="sm" variant="outline" className="flex-1">
+                  <Link to="/people/$id" params={{ id: active.person.id }}>
+                    <UserRound aria-hidden="true" className="size-4" /> Profile
+                  </Link>
+                </Button>
+              ) : null}
             </div>
           </motion.div>
         ) : null}

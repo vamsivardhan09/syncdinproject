@@ -387,7 +387,8 @@ function Twin() {
                     else if (source.id === "linkedin" || source.id === "github") {
                       setAskValue("");
                       setUrlAsk(source.id);
-                    } else startSync(source.id, "import");
+                    } else startSync(source.id as string, "import");
+
 
                   }}
                 >

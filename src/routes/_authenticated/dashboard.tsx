@@ -111,7 +111,21 @@ function Dashboard() {
 
   const firstName = useMemo(() => (name ? name.split(" ")[0] : "there"), [name]);
   const sourcesConnected = state.connectedSources.length + state.trainedSources.length;
-  const topMatches = demoPeople.slice(0, 3);
+  const stats = useMemo(() => demoStats(), []);
+  const vector = useMemo(
+     () =>
+       buildTwinVector({
+         connectedSources: state.connectedSources,
+         trainedSources: state.trainedSources,
+         connectionsMade: state.connectionsMade,
+         intelligence,
+       }),
+     [state, intelligence],
+   );
+  const ranked = useMemo(() => rankCandidates(vector, demoPeople), [vector]);
+  const worthMeeting = useMemo(() => ranked.filter((r) => r.score >= 75).length, [ranked]);
+  const topMatches = useMemo(() => ranked.slice(0, 3).map((r) => r.candidate), [ranked]);
+  const scoreFor = (id: string) => ranked.find((r) => r.candidate.id === id)?.score ?? 0;
 
   return (
     <AppShell>
@@ -125,12 +139,13 @@ function Dashboard() {
           {greeting()}, {firstName}
         </p>
         <h1 className="mt-2 text-2xl leading-tight font-extrabold sm:text-3xl">
-          Your AI Twin analyzed <span className="brand-gradient-text">247 professionals</span> today
-          and found 13 worth your time.
+          Your Twin read{" "}
+          <span className="brand-gradient-text">{demoPeople.length} profiles</span> in your network
+          and found {worthMeeting} worth your time.
         </h1>
         <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
           Nothing to set up first — this is live value. Every match below comes with the reason your
-          Twin picked it.
+          Twin picked it, recomputed each time your Twin learns something new.
         </p>
 
         <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -149,6 +164,7 @@ function Dashboard() {
           ))}
         </div>
       </motion.header>
+
 
       <div className="mt-6 grid gap-6 xl:grid-cols-[1fr_20rem]">
         <div className="min-w-0 space-y-6">

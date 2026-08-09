@@ -121,7 +121,9 @@ function infoContent(p: MapPerson) {
       </div>
     </div>
     <a href="/messages/${p.slug}" style="display:block;margin-top:10px;text-align:center;background:#4f39c8;color:#fff;border-radius:10px;padding:7px 10px;font-weight:600;text-decoration:none">Open Twin chat</a>
+    <a href="/network" style="display:block;margin-top:6px;text-align:center;color:#4f39c8;font-weight:600;text-decoration:none">See why you matched</a>
   `;
+
   return el;
 }
 

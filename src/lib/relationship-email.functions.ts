@@ -12,6 +12,11 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 export type RelationshipEmailRequest = {
   kind: "connection_request" | "connection_accepted" | "new_message" | "strong_match" | "event_match";
   recipientId: string;
+  /**
+   * For match emails the person shown in the email is the matched member, not
+   * the caller. Ignored for actor-driven kinds, where the actor is the caller.
+   */
+  subjectId?: string | null;
   /** Path the CTA deep-links to inside SyncdIn. */
   path: string;
   /** Stable key for this event so retries/refreshes cannot double-send. */
@@ -43,6 +48,8 @@ export const sendRelationshipEmail = createServerFn({ method: "POST" })
     return {
       kind: input.kind,
       recipientId: input.recipientId,
+      subjectId:
+        input.subjectId && UUID_RE.test(input.subjectId) ? input.subjectId : null,
       path: input.path,
       dedupeKey: input.dedupeKey.slice(0, 200),
       cooldownMinutes: Math.min(Math.max(input.cooldownMinutes ?? 0, 0), 1440),
@@ -53,9 +60,16 @@ export const sendRelationshipEmail = createServerFn({ method: "POST" })
   })
   .handler(async ({ data, context }) => {
     const actorId = context.userId;
-    if (actorId === data.recipientId && data.kind !== "strong_match" && data.kind !== "event_match") {
+    const isMatchKind = data.kind === "strong_match" || data.kind === "event_match";
+    // Match emails are self-directed only: nobody can trigger them for others.
+    if (isMatchKind && actorId !== data.recipientId) {
+      return { sent: false as const, reason: "forbidden" };
+    }
+    if (!isMatchKind && actorId === data.recipientId) {
       return { sent: false as const, reason: "self" };
     }
+    // The person shown in the email: the matched member for match kinds.
+    const displayId = isMatchKind ? (data.subjectId ?? actorId) : actorId;
 
     const { renderRelationshipEmail, sendEmail } = await import("./relationship-email.server");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -107,7 +121,7 @@ export const sendRelationshipEmail = createServerFn({ method: "POST" })
     const { data: actorProfile } = await supabaseAdmin
       .from("profiles")
       .select("full_name, headline, avatar_url")
-      .eq("id", actorId)
+      .eq("id", displayId)
       .maybeSingle();
 
     const { data: userRes, error: userErr } = await supabaseAdmin.auth.admin.getUserById(

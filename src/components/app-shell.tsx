@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { BrandLogo } from "@/components/brand-logo";
+import { NotificationBell } from "@/components/notification-bell";
 import { Button } from "@/components/ui/button";
 import { nextBestAction } from "@/lib/twin-knowledge";
 import { useTwin } from "@/lib/twin-store";
@@ -50,9 +51,15 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   const sidebar = (
     <div className="flex h-full flex-col gap-6 p-5">
-      <Link to="/dashboard" className="focus-ring rounded-lg">
-        <BrandLogo />
-      </Link>
+      <div className="flex items-center gap-2">
+        <Link to="/dashboard" className="focus-ring rounded-lg">
+          <BrandLogo />
+        </Link>
+        <span className="ml-auto">
+          <NotificationBell />
+        </span>
+      </div>
+
 
       <nav aria-label="Primary" className="flex flex-col gap-1">
         {nav.map((item) => {
@@ -133,6 +140,9 @@ export function AppShell({ children }: { children: ReactNode }) {
             <span className="sr-only">Open menu</span>
           </Button>
           <BrandLogo />
+          <span className="ml-auto">
+            <NotificationBell />
+          </span>
         </header>
         <main className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 lg:px-10">{children}</main>
       </div>

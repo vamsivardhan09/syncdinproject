@@ -108,6 +108,28 @@ function Conversation() {
     [profile, intelligence, sourceNames],
   );
 
+  // Real SyncdIn members aren't in the demo directory — load their public profile.
+  useEffect(() => {
+    if (demoPerson || !isRealUserId(peer)) return;
+    let cancelled = false;
+    setPeerLoading(true);
+    void (async () => {
+      try {
+        const profileRow = await getPublicProfile(peer);
+        if (cancelled) return;
+        setRealPerson(profileRow ? personFromProfile(profileRow) : null);
+      } catch {
+        if (!cancelled) setRealPerson(null);
+      } finally {
+        if (!cancelled) setPeerLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [peer, demoPerson]);
+
+
   useEffect(() => {
     void (async () => {
       const { data: auth } = await supabase.auth.getUser();

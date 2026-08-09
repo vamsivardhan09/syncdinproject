@@ -120,30 +120,32 @@ async function persistConnection(peerSlug: string, remove = false): Promise<Conn
   }
 }
 
-/** Reads persisted sources and connections so the Twin survives a refresh. */
+/**
+ * Reads the server's copy of the Twin. The database is the source of truth:
+ * a row deleted on the server must not come back from this device's cache.
+ */
 async function loadRemoteState(): Promise<Partial<TwinState> | null> {
   try {
     const { supabase } = await import("@/integrations/supabase/client");
     const { data } = await supabase.auth.getUser();
     if (!data.user) return null;
-    const [sources, connections] = await Promise.all([
+    const [sources, connections, profile] = await Promise.all([
       supabase.from("twin_sources").select("source_id, kind"),
       supabase.from("connections").select("peer_slug"),
+      supabase.from("profiles").select("onboarded").eq("id", data.user.id).maybeSingle(),
     ]);
     const rows = sources.data ?? [];
     return {
       connectedSources: rows.filter((r) => r.kind === "import").map((r) => r.source_id),
       trainedSources: rows.filter((r) => r.kind === "training").map((r) => r.source_id),
       connectionsMade: (connections.data ?? []).map((r) => r.peer_slug),
+      onboarded: profile.data?.onboarded ?? false,
     };
   } catch {
     return null;
   }
 }
 
-function union(a: string[] = [], b: string[] = []) {
-  return Array.from(new Set([...a, ...b]));
-}
 
 
 
@@ -166,23 +168,25 @@ export function TwinProvider({ children }: { children: ReactNode }) {
     setHydrated(true);
   }, []);
 
-  // Merge anything persisted in the backend, so a refresh or new device keeps
-  // the Twin's sources and connections.
+  // The backend is authoritative once it answers: local cache only bridges the
+  // first paint, so anything removed server-side stays removed here.
   useEffect(() => {
     let active = true;
     void loadRemoteState().then((remote) => {
       if (!active || !remote) return;
       setState((prev) => ({
         ...prev,
-        connectedSources: union(prev.connectedSources, remote.connectedSources),
-        trainedSources: union(prev.trainedSources, remote.trainedSources),
-        connectionsMade: union(prev.connectionsMade, remote.connectionsMade),
+        connectedSources: remote.connectedSources ?? [],
+        trainedSources: remote.trainedSources ?? [],
+        connectionsMade: remote.connectionsMade ?? [],
+        onboarded: remote.onboarded ?? prev.onboarded,
       }));
     });
     return () => {
       active = false;
     };
   }, []);
+
 
   useEffect(() => {
     if (!hydrated) return;
@@ -321,9 +325,25 @@ export function TwinProvider({ children }: { children: ReactNode }) {
     );
   }, []);
 
+  // Onboarding completion is a server fact: it also makes the member
+  // discoverable so other real accounts can find and connect with them.
   const completeOnboarding = useCallback(() => {
     setState((prev) => ({ ...prev, onboarded: true }));
+    void (async () => {
+      try {
+        const { supabase } = await import("@/integrations/supabase/client");
+        const { data } = await supabase.auth.getUser();
+        if (!data.user) return;
+        await supabase
+          .from("profiles")
+          .update({ onboarded: true, is_discoverable: true })
+          .eq("id", data.user.id);
+      } catch {
+        /* the local flag still lets the user continue */
+      }
+    })();
   }, []);
+
 
   const reset = useCallback(() => {
     setState(initialState);

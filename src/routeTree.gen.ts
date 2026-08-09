@@ -27,6 +27,7 @@ import { Route as AuthenticatedMessagesIndexRouteImport } from './routes/_authen
 import { Route as AuthenticatedMessagesPeerRouteImport } from './routes/_authenticated/messages.$peer'
 import { Route as AuthenticatedNetworksIndexRouteImport } from './routes/_authenticated/networks.index'
 import { Route as AuthenticatedNetworksCodeRouteImport } from './routes/_authenticated/networks.$code'
+import { Route as AuthenticatedPeopleIdRouteImport } from './routes/_authenticated/people.$id'
 import { Route as AuthLinkedinCompleteRouteImport } from './routes/auth.linkedin.complete'
 import { Route as ApiPublicAuthLinkedinCallbackRouteImport } from './routes/api/public/auth/linkedin/callback'
 import { Route as ApiPublicAuthLinkedinStartRouteImport } from './routes/api/public/auth/linkedin/start'
@@ -124,6 +125,11 @@ const AuthenticatedNetworksCodeRoute =
     path: '/networks/$code',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedPeopleIdRoute = AuthenticatedPeopleIdRouteImport.update({
+  id: '/people/$id',
+  path: '/people/$id',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthLinkedinCompleteRoute = AuthLinkedinCompleteRouteImport.update({
   id: '/linkedin/complete',
   path: '/linkedin/complete',
@@ -158,6 +164,7 @@ export interface FileRoutesByFullPath {
   '/twin': typeof AuthenticatedTwinRoute
   '/messages/$peer': typeof AuthenticatedMessagesPeerRoute
   '/networks/$code': typeof AuthenticatedNetworksCodeRoute
+  '/people/$id': typeof AuthenticatedPeopleIdRoute
   '/auth/linkedin/complete': typeof AuthLinkedinCompleteRoute
   '/messages/': typeof AuthenticatedMessagesIndexRoute
   '/networks/': typeof AuthenticatedNetworksIndexRoute
@@ -179,6 +186,7 @@ export interface FileRoutesByTo {
   '/twin': typeof AuthenticatedTwinRoute
   '/messages/$peer': typeof AuthenticatedMessagesPeerRoute
   '/networks/$code': typeof AuthenticatedNetworksCodeRoute
+  '/people/$id': typeof AuthenticatedPeopleIdRoute
   '/auth/linkedin/complete': typeof AuthLinkedinCompleteRoute
   '/messages': typeof AuthenticatedMessagesIndexRoute
   '/networks': typeof AuthenticatedNetworksIndexRoute
@@ -203,6 +211,7 @@ export interface FileRoutesById {
   '/_authenticated/twin': typeof AuthenticatedTwinRoute
   '/_authenticated/messages/$peer': typeof AuthenticatedMessagesPeerRoute
   '/_authenticated/networks/$code': typeof AuthenticatedNetworksCodeRoute
+  '/_authenticated/people/$id': typeof AuthenticatedPeopleIdRoute
   '/auth/linkedin/complete': typeof AuthLinkedinCompleteRoute
   '/_authenticated/messages/': typeof AuthenticatedMessagesIndexRoute
   '/_authenticated/networks/': typeof AuthenticatedNetworksIndexRoute
@@ -227,6 +236,7 @@ export interface FileRouteTypes {
     | '/twin'
     | '/messages/$peer'
     | '/networks/$code'
+    | '/people/$id'
     | '/auth/linkedin/complete'
     | '/messages/'
     | '/networks/'
@@ -248,6 +258,7 @@ export interface FileRouteTypes {
     | '/twin'
     | '/messages/$peer'
     | '/networks/$code'
+    | '/people/$id'
     | '/auth/linkedin/complete'
     | '/messages'
     | '/networks'
@@ -271,6 +282,7 @@ export interface FileRouteTypes {
     | '/_authenticated/twin'
     | '/_authenticated/messages/$peer'
     | '/_authenticated/networks/$code'
+    | '/_authenticated/people/$id'
     | '/auth/linkedin/complete'
     | '/_authenticated/messages/'
     | '/_authenticated/networks/'
@@ -418,6 +430,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedNetworksCodeRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/people/$id': {
+      id: '/_authenticated/people/$id'
+      path: '/people/$id'
+      fullPath: '/people/$id'
+      preLoaderRoute: typeof AuthenticatedPeopleIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/auth/linkedin/complete': {
       id: '/auth/linkedin/complete'
       path: '/linkedin/complete'
@@ -466,6 +485,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedTwinRoute: typeof AuthenticatedTwinRoute
   AuthenticatedNetworksCodeRoute: typeof AuthenticatedNetworksCodeRoute
+  AuthenticatedPeopleIdRoute: typeof AuthenticatedPeopleIdRoute
   AuthenticatedNetworksIndexRoute: typeof AuthenticatedNetworksIndexRoute
 }
 
@@ -478,6 +498,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedTwinRoute: AuthenticatedTwinRoute,
   AuthenticatedNetworksCodeRoute: AuthenticatedNetworksCodeRoute,
+  AuthenticatedPeopleIdRoute: AuthenticatedPeopleIdRoute,
   AuthenticatedNetworksIndexRoute: AuthenticatedNetworksIndexRoute,
 }
 
@@ -508,13 +529,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

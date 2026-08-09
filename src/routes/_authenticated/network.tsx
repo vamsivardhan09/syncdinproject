@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import { motion } from "motion/react";
 import { ArrowRight, Search } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
+import { RealPeopleDirectory } from "@/components/real-people-directory";
 import { RecommendationCard } from "@/components/recommendation-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -68,13 +69,20 @@ function Network() {
   return (
     <AppShell>
       <header>
-        <h1 className="text-3xl font-extrabold sm:text-4xl">Matches your Twin approved</h1>
+        <h1 className="text-3xl font-extrabold sm:text-4xl">Your network</h1>
         <p className="mt-2 text-muted-foreground">
-          Sorted by fit, not by follower count. Every card shows why it made the cut.
+          Real SyncdIn members first, then demo matches sorted by fit. Every card shows why it made
+          the cut.
         </p>
       </header>
 
-      <div className="mt-7 flex flex-col gap-4">
+      <div className="mt-7">
+        <RealPeopleDirectory />
+      </div>
+
+      <div className="mt-10 flex flex-col gap-4">
+        <h2 className="text-lg font-bold">Demo matches your Twin approved</h2>
+
         <div className="relative max-w-md">
           <Search
             aria-hidden="true"

@@ -21,7 +21,11 @@ export type PublicProfile = {
   location: string | null;
   avatar_url: string | null;
   skills: string[] | null;
+  goals: string[] | null;
+  interests: string[] | null;
+  twin_summary: string | null;
   twin_intelligence: number | null;
+  last_active_at: string | null;
 };
 
 export type ConnectionProfile = PublicProfile & { connected_at: string | null };
@@ -35,7 +39,13 @@ export type ConnectionRequest = {
   status: RequestStatus;
   created_at: string;
   responded_at: string | null;
+  /** Opening note the requester attached, visible to both participants. */
+  intro_note: string | null;
 };
+
+const REQUEST_COLUMNS =
+  "id, requester_id, recipient_id, status, created_at, responded_at, intro_note";
+
 
 export function displayName(p: { full_name: string | null } | null | undefined) {
   return p?.full_name?.trim() || "SyncdIn member";

@@ -142,6 +142,19 @@ function Conversation() {
         return;
       }
       if (data) setMessages((prev) => [...prev, data]);
+      // Email the human recipient only — never the sender, and at most once
+      // every 15 minutes so rapid messages group into a single nudge.
+      if (sender === "user" && isRealUserId(peer) && peer !== userId) {
+        void sendRelationshipEmail({
+          data: {
+            kind: "new_message",
+            recipientId: peer,
+            path: `/messages/${userId}`,
+            dedupeKey: `new_message:${userId}:${peer}:${Math.floor(Date.now() / 900_000)}`,
+            cooldownMinutes: 15,
+          },
+        }).catch(() => undefined);
+      }
     },
     [userId, peer],
   );

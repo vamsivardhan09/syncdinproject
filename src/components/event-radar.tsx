@@ -18,6 +18,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { TwinScreeningModal, type ScreeningTarget } from "@/components/twin-screening-modal";
+import { currentUserId } from "@/lib/real-people";
+import { sendRelationshipEmail } from "@/lib/relationship-email.functions";
 import { photoFor } from "@/lib/demo-data";
 import type { EventNetwork } from "@/lib/event-network";
 import {

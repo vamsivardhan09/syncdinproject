@@ -515,6 +515,58 @@ function Twin() {
         </DialogContent>
       </Dialog>
 
+      <Dialog open={urlAsk !== null} onOpenChange={(open) => (open ? null : setUrlAsk(null))}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {urlAsk === "github" ? "Your GitHub profile" : "Your LinkedIn profile"}
+            </DialogTitle>
+            <DialogDescription>
+              {urlAsk === "github"
+                ? "Your Twin reads your public repositories, languages and topics to understand what you build."
+                : "Your Twin reads your public profile page and extracts your headline, skills and focus areas."}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="profile-url">Profile URL</Label>
+            <Input
+              id="profile-url"
+              autoFocus
+              placeholder={
+                urlAsk === "github"
+                  ? "https://github.com/yourname"
+                  : "https://linkedin.com/in/yourname"
+              }
+              value={askValue}
+              onChange={(event) => setAskValue(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") submitProfileUrl();
+              }}
+            />
+            <p className="text-xs text-muted-foreground">
+              Public data only. No password, no private data, nothing posted on your behalf.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setUrlAsk(null)}>
+              Cancel
+            </Button>
+            <Button onClick={submitProfileUrl} disabled={!askValue.trim()}>
+              Continue
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <TeachTwinModal
+        assistant={teach}
+        onClose={() => setTeach(null)}
+        onSubmit={(text) => {
+          if (teach) submitTeachText(teach, text);
+        }}
+      />
+
+
       <ConnectSyncModal
         flow={activeFlow}
         fromIntelligence={baseline}

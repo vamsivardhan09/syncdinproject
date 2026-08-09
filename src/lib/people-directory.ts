@@ -61,7 +61,7 @@ export function personFromProfile(p: {
       .join(""),
     role: headline,
     company: "SyncdIn",
-    kind: "professional",
+    kind: "Mentor",
     location: p.location?.trim() || "Location not shared",
     match: Math.max(50, Math.min(99, Math.round(p.twin_intelligence ?? 70))),
     bio: p.twin_summary?.trim() || `${name} is on SyncdIn and their Twin is learning from real work.`,

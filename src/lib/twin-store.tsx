@@ -69,9 +69,9 @@ async function persistSource(sourceId: string, kind: string, gain: number) {
 async function noteNewConnection(peerSlug: string) {
   try {
     const { noteConnection } = await import("@/lib/network-activity");
-    const { personById } = await import("@/lib/demo-data");
+    const { resolvePerson } = await import("@/lib/people-directory");
     await noteConnection(
-      personById(peerSlug)?.name ?? "a new match",
+      resolvePerson(peerSlug)?.name ?? "a new match",
       "Your Twins have exchanged context — open the conversation to take it from here.",
     );
   } catch {
@@ -241,28 +241,63 @@ export function TwinProvider({ children }: { children: ReactNode }) {
   );
 
 
-  const toggleConnection = useCallback((id: string) => {
+  /**
+   * Adds a connection optimistically, then rolls it back and surfaces the real
+   * error if the database write fails. Never reports a success that isn't saved.
+   */
+  const connect = useCallback(async (id: string): Promise<ConnectResult> => {
+    let already = false;
     setState((prev) => {
-      const has = prev.connectionsMade.includes(id);
-      void persistConnection(id, has);
-      if (!has) void noteNewConnection(id);
-      return {
-        ...prev,
-        connectionsMade: has
-          ? prev.connectionsMade.filter((c) => c !== id)
-          : [...prev.connectionsMade, id],
-      };
+      already = prev.connectionsMade.includes(id);
+      return already ? prev : { ...prev, connectionsMade: [...prev.connectionsMade, id] };
     });
+    if (already) return { ok: true };
+    setPending((p) => (p.includes(id) ? p : [...p, id]));
+    const result = await persistConnection(id);
+    setPending((p) => p.filter((x) => x !== id));
+    if (!result.ok) {
+      setState((prev) => ({
+        ...prev,
+        connectionsMade: prev.connectionsMade.filter((c) => c !== id),
+      }));
+      toast.error("Couldn't save that connection", {
+        description: result.error ?? "Please try again.",
+      });
+      return result;
+    }
+    await noteNewConnection(id);
+    return result;
   }, []);
 
-  const connect = useCallback((id: string) => {
-    setState((prev) => {
-      if (prev.connectionsMade.includes(id)) return prev;
-      void persistConnection(id);
-      void noteNewConnection(id);
-      return { ...prev, connectionsMade: [...prev.connectionsMade, id] };
-    });
+  const disconnect = useCallback(async (id: string): Promise<ConnectResult> => {
+    setState((prev) => ({
+      ...prev,
+      connectionsMade: prev.connectionsMade.filter((c) => c !== id),
+    }));
+    setPending((p) => (p.includes(id) ? p : [...p, id]));
+    const result = await persistConnection(id, true);
+    setPending((p) => p.filter((x) => x !== id));
+    if (!result.ok) {
+      setState((prev) => ({
+        ...prev,
+        connectionsMade: prev.connectionsMade.includes(id)
+          ? prev.connectionsMade
+          : [...prev.connectionsMade, id],
+      }));
+      toast.error("Couldn't remove that connection", {
+        description: result.error ?? "Please try again.",
+      });
+    }
+    return result;
   }, []);
+
+  const toggleConnection = useCallback(
+    (id: string): Promise<ConnectResult> =>
+      stateRef.current.connectionsMade.includes(id) ? disconnect(id) : connect(id),
+    [connect, disconnect],
+  );
+
+
 
 
   const joinNetwork = useCallback((code: string) => {

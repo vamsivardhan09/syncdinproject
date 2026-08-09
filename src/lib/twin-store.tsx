@@ -353,6 +353,7 @@ export function TwinProvider({ children }: { children: ReactNode }) {
       trainSource,
       toggleConnection,
       connect,
+      pendingConnections,
       joinNetwork,
       completeOnboarding,
       reset,

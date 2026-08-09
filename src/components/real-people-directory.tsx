@@ -204,7 +204,7 @@ export function RealPeopleDirectory() {
   const others = rankProfiles(
     vector,
     (people ?? []).filter((p) => p.id !== me),
-    { name: myProfile?.full_name, headline: myProfile?.headline },
+    { name: myProfile?.full_name ?? null, headline: myProfile?.headline ?? null },
   );
 
 

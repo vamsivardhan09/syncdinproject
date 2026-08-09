@@ -268,7 +268,18 @@ export async function sendConnectionRequest(
     }
     throw new Error(error.message);
   }
-  return data as ConnectionRequest;
+  const request = data as ConnectionRequest;
+  // Email only after the row is persisted; a failed email never fails the connection.
+  void sendRelationshipEmail({
+    data: {
+      kind: "connection_request",
+      recipientId: request.recipient_id,
+      path: `/people/${me}`,
+      dedupeKey: `connection_request:${request.id}`,
+      note: request.intro_note,
+    },
+  }).catch(() => undefined);
+  return request;
 }
 
 /** Only the recipient may accept or decline — enforced by RLS as well. */
@@ -283,11 +294,45 @@ export async function respondToRequest(
     .select(REQUEST_COLUMNS)
     .single();
   if (error) throw new Error(error.message);
-  return data as ConnectionRequest;
+  const request = data as ConnectionRequest;
+  if (status === "accepted") {
+    void sendRelationshipEmail({
+      data: {
+        kind: "connection_accepted",
+        recipientId: request.requester_id,
+        path: `/messages/${request.recipient_id}`,
+        dedupeKey: `connection_accepted:${request.id}`,
+      },
+    }).catch(() => undefined);
+  }
+  return request;
 }
 
 export async function cancelRequest(requestId: string): Promise<void> {
   const { error } = await supabase.from("connection_requests").delete().eq("id", requestId);
+  if (error) throw new Error(error.message);
+}
+
+/** Relationship email preference for the signed-in user (default ON). */
+export async function getEmailPreference(): Promise<boolean> {
+  const me = await currentUserId();
+  if (!me) return true;
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("email_relationship_notifications")
+    .eq("id", me)
+    .maybeSingle();
+  if (error) return true;
+  return data?.email_relationship_notifications ?? true;
+}
+
+export async function setEmailPreference(enabled: boolean): Promise<void> {
+  const me = await currentUserId();
+  if (!me) throw new Error("You need to be signed in.");
+  const { error } = await supabase
+    .from("profiles")
+    .update({ email_relationship_notifications: enabled })
+    .eq("id", me);
   if (error) throw new Error(error.message);
 }
 

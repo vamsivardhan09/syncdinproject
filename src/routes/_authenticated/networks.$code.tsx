@@ -12,7 +12,9 @@ import {
   Users,
 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
+import { EventRadar } from "@/components/event-radar";
 import { TwinScreeningModal, type ScreeningTarget } from "@/components/twin-screening-modal";
+
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { photoFor } from "@/lib/demo-data";
@@ -50,8 +52,22 @@ export const Route = createFileRoute("/_authenticated/networks/$code")({
       ],
     };
   },
-  component: NetworkRoom,
+  component: NetworkRoute,
 });
+
+function NetworkRoute() {
+  const { network } = Route.useLoaderData();
+  return (
+    <AppShell>
+      <Button asChild variant="ghost" size="sm" className="-ml-2">
+        <Link to="/networks">
+          <ArrowLeft aria-hidden="true" className="size-4" /> All networks
+        </Link>
+      </Button>
+      {network.mode === "live" ? <EventRadar network={network} /> : <NetworkRoom />}
+    </AppShell>
+  );
+}
 
 const ANALYSIS_STEPS = [
   "Reading attendee Twin profiles",
@@ -65,6 +81,7 @@ type Ranked = { candidate: Attendee; score: number; reasons: string[]; topTopic:
 function NetworkRoom() {
   const { network } = Route.useLoaderData();
   const { state, intelligence, connect, joinNetwork, hydrated } = useTwin();
+
   const [phase, setPhase] = useState<"analyzing" | "ready">("analyzing");
   const [step, setStep] = useState(0);
   const [filter, setFilter] = useState<string>("All");
@@ -143,12 +160,8 @@ function NetworkRoom() {
   }
 
   return (
-    <AppShell>
-      <Button asChild variant="ghost" size="sm" className="-ml-2">
-        <Link to="/networks">
-          <ArrowLeft aria-hidden="true" className="size-4" /> All networks
-        </Link>
-      </Button>
+    <>
+
 
       <header className="surface-card mt-3 p-6 sm:p-8">
         <div className="flex flex-wrap items-center gap-2">
@@ -328,8 +341,9 @@ function NetworkRoom() {
         onClose={() => setTarget(null)}
         onConnect={(person, intro) => handleConnect(person, intro)}
       />
-    </AppShell>
+    </>
   );
+
 }
 
 function MatchCard({

@@ -168,23 +168,25 @@ export function TwinProvider({ children }: { children: ReactNode }) {
     setHydrated(true);
   }, []);
 
-  // Merge anything persisted in the backend, so a refresh or new device keeps
-  // the Twin's sources and connections.
+  // The backend is authoritative once it answers: local cache only bridges the
+  // first paint, so anything removed server-side stays removed here.
   useEffect(() => {
     let active = true;
     void loadRemoteState().then((remote) => {
       if (!active || !remote) return;
       setState((prev) => ({
         ...prev,
-        connectedSources: union(prev.connectedSources, remote.connectedSources),
-        trainedSources: union(prev.trainedSources, remote.trainedSources),
-        connectionsMade: union(prev.connectionsMade, remote.connectionsMade),
+        connectedSources: remote.connectedSources ?? [],
+        trainedSources: remote.trainedSources ?? [],
+        connectionsMade: remote.connectionsMade ?? [],
+        onboarded: remote.onboarded ?? prev.onboarded,
       }));
     });
     return () => {
       active = false;
     };
   }, []);
+
 
   useEffect(() => {
     if (!hydrated) return;

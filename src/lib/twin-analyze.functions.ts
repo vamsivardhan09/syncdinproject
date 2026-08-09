@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const ResumeInput = z.object({
   filename: z.string().min(1),
@@ -62,6 +63,7 @@ async function callGateway(content: unknown[]): Promise<TwinAnalysis> {
 }
 
 export const analyzeResume = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => ResumeInput.parse(input))
   .handler(async ({ data }) => {
     const base64 = data.fileData.split(",")[1] ?? "";
@@ -92,6 +94,7 @@ export const analyzeResume = createServerFn({ method: "POST" })
   });
 
 export const analyzePortfolio = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => PortfolioInput.parse(input))
   .handler(async ({ data }) => {
     let pageText = "";

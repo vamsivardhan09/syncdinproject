@@ -9,6 +9,8 @@ export type TwinState = {
   connectedSources: string[];
   trainedSources: string[];
   connectionsMade: string[];
+  /** Event/community networks the user's Twin has joined. */
+  joinedNetworks: string[];
 };
 
 const initialState: TwinState = {
@@ -16,6 +18,7 @@ const initialState: TwinState = {
   connectedSources: [],
   trainedSources: [],
   connectionsMade: [],
+  joinedNetworks: [],
 };
 
 type TwinContextValue = {
@@ -27,6 +30,8 @@ type TwinContextValue = {
   connectSource: (id: string) => void;
   trainSource: (id: string) => void;
   toggleConnection: (id: string) => void;
+  connect: (id: string) => void;
+  joinNetwork: (code: string) => void;
   completeOnboarding: () => void;
   reset: () => void;
 };
@@ -148,6 +153,22 @@ export function TwinProvider({ children }: { children: ReactNode }) {
     }));
   }, []);
 
+  const connect = useCallback((id: string) => {
+    setState((prev) =>
+      prev.connectionsMade.includes(id)
+        ? prev
+        : { ...prev, connectionsMade: [...prev.connectionsMade, id] },
+    );
+  }, []);
+
+  const joinNetwork = useCallback((code: string) => {
+    setState((prev) =>
+      prev.joinedNetworks.includes(code)
+        ? prev
+        : { ...prev, joinedNetworks: [...prev.joinedNetworks, code] },
+    );
+  }, []);
+
   const completeOnboarding = useCallback(() => {
     setState((prev) => ({ ...prev, onboarded: true }));
   }, []);
@@ -164,6 +185,8 @@ export function TwinProvider({ children }: { children: ReactNode }) {
       connectSource,
       trainSource,
       toggleConnection,
+      connect,
+      joinNetwork,
       completeOnboarding,
       reset,
     }),
@@ -176,6 +199,8 @@ export function TwinProvider({ children }: { children: ReactNode }) {
       connectSource,
       trainSource,
       toggleConnection,
+      connect,
+      joinNetwork,
       completeOnboarding,
       reset,
     ],

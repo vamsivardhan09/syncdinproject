@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      connection_requests: {
+        Row: {
+          created_at: string
+          id: string
+          recipient_id: string
+          requester_id: string
+          responded_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          recipient_id: string
+          requester_id: string
+          responded_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          recipient_id?: string
+          requester_id?: string
+          responded_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       connections: {
         Row: {
           created_at: string
@@ -178,26 +208,35 @@ export type Database = {
       }
       notifications: {
         Row: {
+          actor_id: string | null
           body: string | null
           created_at: string
           id: string
+          kind: string
           read: boolean
+          reference_id: string | null
           title: string
           user_id: string
         }
         Insert: {
+          actor_id?: string | null
           body?: string | null
           created_at?: string
           id?: string
+          kind?: string
           read?: boolean
+          reference_id?: string | null
           title: string
           user_id: string
         }
         Update: {
+          actor_id?: string | null
           body?: string | null
           created_at?: string
           id?: string
+          kind?: string
           read?: boolean
+          reference_id?: string | null
           title?: string
           user_id?: string
         }
@@ -210,10 +249,13 @@ export type Database = {
           full_name: string | null
           headline: string | null
           id: string
+          is_discoverable: boolean
           latitude: number | null
           location: string | null
           location_updated_at: string | null
           longitude: number | null
+          onboarded: boolean
+          skills: string[]
           twin_intelligence: number
           updated_at: string
         }
@@ -223,10 +265,13 @@ export type Database = {
           full_name?: string | null
           headline?: string | null
           id: string
+          is_discoverable?: boolean
           latitude?: number | null
           location?: string | null
           location_updated_at?: string | null
           longitude?: number | null
+          onboarded?: boolean
+          skills?: string[]
           twin_intelligence?: number
           updated_at?: string
         }
@@ -236,10 +281,13 @@ export type Database = {
           full_name?: string | null
           headline?: string | null
           id?: string
+          is_discoverable?: boolean
           latitude?: number | null
           location?: string | null
           location_updated_at?: string | null
           longitude?: number | null
+          onboarded?: boolean
+          skills?: string[]
           twin_intelligence?: number
           updated_at?: string
         }
@@ -277,7 +325,53 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_notification_actors: {
+        Args: { _ids: string[] }
+        Returns: {
+          avatar_url: string
+          full_name: string
+          headline: string
+          id: string
+        }[]
+      }
+      get_public_profile: {
+        Args: { _id: string }
+        Returns: {
+          avatar_url: string
+          created_at: string
+          full_name: string
+          headline: string
+          id: string
+          location: string
+          skills: string[]
+          twin_intelligence: number
+        }[]
+      }
+      list_my_connections: {
+        Args: never
+        Returns: {
+          avatar_url: string
+          connected_at: string
+          full_name: string
+          headline: string
+          id: string
+          location: string
+          skills: string[]
+          twin_intelligence: number
+        }[]
+      }
+      search_people: {
+        Args: { _limit?: number; _q?: string }
+        Returns: {
+          avatar_url: string
+          full_name: string
+          headline: string
+          id: string
+          location: string
+          skills: string[]
+          twin_intelligence: number
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never

@@ -79,14 +79,24 @@ function readAsDataUrl(file: File) {
 }
 
 function Twin() {
-  const { state, intelligence, dimensions, connectSource, trainSource, reset } = useTwin();
+  const { state, intelligence, dimensions, gainFor, connectSource, trainSource, reset } = useTwin();
   const [activeFlow, setActiveFlow] = useState<SyncFlow | null>(null);
   const [baseline, setBaseline] = useState(0);
   const [pending, setPending] = useState<{ id: string; kind: "import" | "training" } | null>(null);
   const [run, setRun] = useState<AnalysisRun | null>(null);
   const [portfolioOpen, setPortfolioOpen] = useState(false);
   const [portfolioUrl, setPortfolioUrl] = useState("");
+  const [result, setResult] = useState<{
+    name: string;
+    signals: number;
+    from: number;
+    to: number;
+  } | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
+
+  const sources = [...state.connectedSources, ...state.trainedSources];
+  const knowledge = twinKnowledge(sources).filter((g) => g.items.length > 0);
+  const gaps = openGaps(sources);
 
   const startSync = (id: string, kind: "import" | "training", analysis: AnalysisRun | null = null) => {
     const flow = syncFlows[id];

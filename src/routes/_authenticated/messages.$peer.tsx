@@ -68,7 +68,11 @@ type Message = {
 function Conversation() {
   const { peer } = Route.useParams();
   const { state, intelligence, toggleConnection } = useTwin();
-  const person = resolvePerson(peer)!;
+  const demoPerson = resolvePerson(peer);
+  const [realPerson, setRealPerson] = useState<DemoPerson | null>(null);
+  const [peerLoading, setPeerLoading] = useState(demoPerson === null);
+  const person = demoPerson ?? realPerson;
+
   const runTwin = useServerFn(generateTwinReply);
 
   const [userId, setUserId] = useState<string | null>(null);

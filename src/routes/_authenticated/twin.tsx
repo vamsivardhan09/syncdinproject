@@ -31,11 +31,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { importSources, trainingSources } from "@/lib/demo-data";
 import { SOURCE_SIGNALS } from "@/lib/matching";
+import { importGitHub, importLinkedIn, normalizeLinkedInUrl } from "@/lib/profile-import";
 import { syncFlows, type SyncFlow } from "@/lib/sync-flows";
-import { analyzePortfolio, analyzeResume } from "@/lib/twin-analyze.functions";
+import { TeachTwinModal } from "@/components/teach-twin-modal";
+import { analyzePortfolio, analyzeResume, analyzeText } from "@/lib/twin-analyze.functions";
 import { openGaps, twinKnowledge } from "@/lib/twin-knowledge";
 import { useTwin } from "@/lib/twin-store";
 import { cn } from "@/lib/utils";
+
 
 
 

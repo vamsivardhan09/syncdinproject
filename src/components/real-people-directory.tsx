@@ -208,6 +208,30 @@ export function RealPeopleDirectory() {
     { name: myProfile?.full_name ?? null, headline: myProfile?.headline ?? null },
   );
 
+  // A genuinely strong, evidence-backed match is worth an email — once per pair.
+  const top = others[0];
+  const strongId =
+    top && top.brief.score >= 80 && top.brief.hasEvidence && top.activity.tier !== "dormant"
+      ? top.profile.id
+      : null;
+  useEffect(() => {
+    if (!me || !strongId || !top) return;
+    void sendRelationshipEmail({
+      data: {
+        kind: "strong_match",
+        recipientId: me,
+        subjectId: strongId,
+        path: `/people/${strongId}`,
+        dedupeKey: `strong_match:${me}:${strongId}`,
+        reasons: top.brief.reasons,
+      },
+    }).catch(() => undefined);
+    // Only re-run when the strongest match itself changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [me, strongId]);
+
+
+
 
   return (
     <section className="surface-card p-6">

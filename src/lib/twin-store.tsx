@@ -1,4 +1,12 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import type { ReactNode } from "react";
 import { toast } from "sonner";
 import { importSources, trainingSources, twinDimensions } from "@/lib/demo-data";
@@ -142,6 +150,11 @@ function union(a: string[] = [], b: string[] = []) {
 export function TwinProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<TwinState>(initialState);
   const [hydrated, setHydrated] = useState(false);
+  const [pendingConnections, setPending] = useState<string[]>([]);
+  const stateRef = useRef(state);
+  stateRef.current = state;
+
+
 
   useEffect(() => {
     try {

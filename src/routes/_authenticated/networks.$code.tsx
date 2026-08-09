@@ -339,8 +339,9 @@ function NetworkRoom() {
         onClose={() => setTarget(null)}
         onConnect={(person, intro) => handleConnect(person, intro)}
       />
-    </AppShell>
+    </>
   );
+
 }
 
 function MatchCard({

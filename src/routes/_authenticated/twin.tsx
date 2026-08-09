@@ -176,6 +176,57 @@ function Twin() {
     });
   };
 
+  /** LinkedIn / GitHub: ask for the profile URL first, then read it during the sync animation. */
+  const submitProfileUrl = () => {
+    const raw = askValue.trim();
+    if (!raw) return;
+
+    if (urlAsk === "linkedin") {
+      const normalized = normalizeLinkedInUrl(raw);
+      if (!normalized) {
+        toast.error("Paste your linkedin.com/in/… profile URL.");
+        return;
+      }
+      setUrlAsk(null);
+      setAskValue("");
+      startSync("linkedin", "import", async () => {
+        try {
+          const live = await analyzePortfolio({ data: { url: normalized.url } });
+          if (live.skills.length >= 3) {
+            return {
+              summary: live.summary,
+              discovered: [`${Math.round(live.strengthPct)}% profile signal`, ...live.discovered],
+            };
+          }
+        } catch {
+          // LinkedIn gates most profiles — fall back to the structured demo adapter.
+        }
+        const demo = importLinkedIn(normalized.url);
+        return { summary: demo.summary, discovered: demo.discovered };
+      });
+      return;
+    }
+
+    if (urlAsk === "github") {
+      setUrlAsk(null);
+      setAskValue("");
+      startSync("github", "import", async () => {
+        const signals = await importGitHub(raw);
+        return { summary: signals.summary, discovered: signals.discovered };
+      });
+    }
+  };
+
+  /** ChatGPT / Claude / Gemini: the user pastes the assistant's report on themselves. */
+  const submitTeachText = (assistant: string, text: string) => {
+    startSync(assistant.toLowerCase(), "training", async () => {
+      const analysis = await analyzeText({ data: { text } });
+      return {
+        summary: analysis.summary,
+        discovered: [`${Math.round(analysis.strengthPct)}% reasoning signal`, ...analysis.discovered],
+      };
+    });
+  };
 
 
   return (

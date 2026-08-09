@@ -20,6 +20,7 @@ import {
 } from "@/lib/real-people";
 import { rankProfiles, type RankedProfile } from "@/lib/twin-compatibility";
 import { useTwinVector } from "@/lib/use-twin-vector";
+import { sendRelationshipEmail } from "@/lib/relationship-email.functions";
 
 function Avatar({ profile, size = 44 }: { profile: PublicProfile; size?: number }) {
   const name = displayName(profile);

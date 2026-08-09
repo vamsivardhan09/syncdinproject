@@ -154,6 +154,12 @@ function MemberProfile() {
   const incoming = request?.status === "pending" && request.recipient_id === me;
   const outgoing = request?.status === "pending" && request.requester_id === me;
   const declined = request?.status === "declined";
+  const brief = twinBrief(vector, profile, {
+    name: myProfile?.full_name ?? null,
+    headline: myProfile?.headline ?? null,
+  });
+  const activity = activityOf(profile.last_active_at);
+
 
   return (
     <AppShell>

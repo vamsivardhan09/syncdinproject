@@ -12,7 +12,9 @@ import {
   Users,
 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
+import { EventRadar } from "@/components/event-radar";
 import { TwinScreeningModal, type ScreeningTarget } from "@/components/twin-screening-modal";
+
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { photoFor } from "@/lib/demo-data";

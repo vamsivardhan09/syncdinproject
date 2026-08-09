@@ -11,9 +11,10 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
-import { importSources, photoFor, trainingSources } from "@/lib/demo-data";
-import { resolvePerson } from "@/lib/people-directory";
-import { isRealUserId } from "@/lib/real-people";
+import { importSources, photoFor, trainingSources, type DemoPerson } from "@/lib/demo-data";
+import { personFromProfile, resolvePerson } from "@/lib/people-directory";
+import { getPublicProfile, isRealUserId } from "@/lib/real-people";
+
 import { sendRelationshipEmail } from "@/lib/relationship-email.functions";
 import { generateTwinReply } from "@/lib/twin-chat.functions";
 import { useTwin } from "@/lib/twin-store";

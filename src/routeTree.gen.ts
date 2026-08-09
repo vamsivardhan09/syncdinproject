@@ -26,6 +26,7 @@ import { Route as AuthenticatedTwinRouteImport } from './routes/_authenticated/t
 import { Route as AuthenticatedMessagesIndexRouteImport } from './routes/_authenticated/messages.index'
 import { Route as AuthenticatedMessagesPeerRouteImport } from './routes/_authenticated/messages.$peer'
 import { Route as AuthenticatedNetworksIndexRouteImport } from './routes/_authenticated/networks.index'
+import { Route as AuthenticatedNetworksCodeRouteImport } from './routes/_authenticated/networks.$code'
 import { Route as AuthLinkedinCompleteRouteImport } from './routes/auth.linkedin.complete'
 import { Route as ApiPublicAuthLinkedinCallbackRouteImport } from './routes/api/public/auth/linkedin/callback'
 import { Route as ApiPublicAuthLinkedinStartRouteImport } from './routes/api/public/auth/linkedin/start'
@@ -117,6 +118,12 @@ const AuthenticatedNetworksIndexRoute =
     path: '/networks/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedNetworksCodeRoute =
+  AuthenticatedNetworksCodeRouteImport.update({
+    id: '/networks/$code',
+    path: '/networks/$code',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthLinkedinCompleteRoute = AuthLinkedinCompleteRouteImport.update({
   id: '/linkedin/complete',
   path: '/linkedin/complete',
@@ -150,6 +157,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof AuthenticatedSettingsRoute
   '/twin': typeof AuthenticatedTwinRoute
   '/messages/$peer': typeof AuthenticatedMessagesPeerRoute
+  '/networks/$code': typeof AuthenticatedNetworksCodeRoute
   '/auth/linkedin/complete': typeof AuthLinkedinCompleteRoute
   '/messages/': typeof AuthenticatedMessagesIndexRoute
   '/networks/': typeof AuthenticatedNetworksIndexRoute
@@ -170,6 +178,7 @@ export interface FileRoutesByTo {
   '/settings': typeof AuthenticatedSettingsRoute
   '/twin': typeof AuthenticatedTwinRoute
   '/messages/$peer': typeof AuthenticatedMessagesPeerRoute
+  '/networks/$code': typeof AuthenticatedNetworksCodeRoute
   '/auth/linkedin/complete': typeof AuthLinkedinCompleteRoute
   '/messages': typeof AuthenticatedMessagesIndexRoute
   '/networks': typeof AuthenticatedNetworksIndexRoute
@@ -193,6 +202,7 @@ export interface FileRoutesById {
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/twin': typeof AuthenticatedTwinRoute
   '/_authenticated/messages/$peer': typeof AuthenticatedMessagesPeerRoute
+  '/_authenticated/networks/$code': typeof AuthenticatedNetworksCodeRoute
   '/auth/linkedin/complete': typeof AuthLinkedinCompleteRoute
   '/_authenticated/messages/': typeof AuthenticatedMessagesIndexRoute
   '/_authenticated/networks/': typeof AuthenticatedNetworksIndexRoute
@@ -216,6 +226,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/twin'
     | '/messages/$peer'
+    | '/networks/$code'
     | '/auth/linkedin/complete'
     | '/messages/'
     | '/networks/'
@@ -236,6 +247,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/twin'
     | '/messages/$peer'
+    | '/networks/$code'
     | '/auth/linkedin/complete'
     | '/messages'
     | '/networks'
@@ -258,6 +270,7 @@ export interface FileRouteTypes {
     | '/_authenticated/settings'
     | '/_authenticated/twin'
     | '/_authenticated/messages/$peer'
+    | '/_authenticated/networks/$code'
     | '/auth/linkedin/complete'
     | '/_authenticated/messages/'
     | '/_authenticated/networks/'
@@ -398,6 +411,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedNetworksIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/networks/$code': {
+      id: '/_authenticated/networks/$code'
+      path: '/networks/$code'
+      fullPath: '/networks/$code'
+      preLoaderRoute: typeof AuthenticatedNetworksCodeRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/auth/linkedin/complete': {
       id: '/auth/linkedin/complete'
       path: '/linkedin/complete'
@@ -445,6 +465,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedTwinRoute: typeof AuthenticatedTwinRoute
+  AuthenticatedNetworksCodeRoute: typeof AuthenticatedNetworksCodeRoute
   AuthenticatedNetworksIndexRoute: typeof AuthenticatedNetworksIndexRoute
 }
 
@@ -456,6 +477,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedTwinRoute: AuthenticatedTwinRoute,
+  AuthenticatedNetworksCodeRoute: AuthenticatedNetworksCodeRoute,
   AuthenticatedNetworksIndexRoute: AuthenticatedNetworksIndexRoute,
 }
 

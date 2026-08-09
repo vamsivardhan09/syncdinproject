@@ -158,12 +158,8 @@ function NetworkRoom() {
   }
 
   return (
-    <AppShell>
-      <Button asChild variant="ghost" size="sm" className="-ml-2">
-        <Link to="/networks">
-          <ArrowLeft aria-hidden="true" className="size-4" /> All networks
-        </Link>
-      </Button>
+    <>
+
 
       <header className="surface-card mt-3 p-6 sm:p-8">
         <div className="flex flex-wrap items-center gap-2">

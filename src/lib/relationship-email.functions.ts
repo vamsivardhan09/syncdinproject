@@ -48,6 +48,8 @@ export const sendRelationshipEmail = createServerFn({ method: "POST" })
     return {
       kind: input.kind,
       recipientId: input.recipientId,
+      subjectId:
+        input.subjectId && UUID_RE.test(input.subjectId) ? input.subjectId : null,
       path: input.path,
       dedupeKey: input.dedupeKey.slice(0, 200),
       cooldownMinutes: Math.min(Math.max(input.cooldownMinutes ?? 0, 0), 1440),
@@ -58,9 +60,16 @@ export const sendRelationshipEmail = createServerFn({ method: "POST" })
   })
   .handler(async ({ data, context }) => {
     const actorId = context.userId;
-    if (actorId === data.recipientId && data.kind !== "strong_match" && data.kind !== "event_match") {
+    const isMatchKind = data.kind === "strong_match" || data.kind === "event_match";
+    // Match emails are self-directed only: nobody can trigger them for others.
+    if (isMatchKind && actorId !== data.recipientId) {
+      return { sent: false as const, reason: "forbidden" };
+    }
+    if (!isMatchKind && actorId === data.recipientId) {
       return { sent: false as const, reason: "self" };
     }
+    // The person shown in the email: the matched member for match kinds.
+    const displayId = isMatchKind ? (data.subjectId ?? actorId) : actorId;
 
     const { renderRelationshipEmail, sendEmail } = await import("./relationship-email.server");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");

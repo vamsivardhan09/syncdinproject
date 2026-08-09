@@ -13,6 +13,8 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { importSources, photoFor, trainingSources } from "@/lib/demo-data";
 import { resolvePerson } from "@/lib/people-directory";
+import { isRealUserId } from "@/lib/real-people";
+import { sendRelationshipEmail } from "@/lib/relationship-email.functions";
 import { generateTwinReply } from "@/lib/twin-chat.functions";
 import { useTwin } from "@/lib/twin-store";
 import { cn } from "@/lib/utils";
@@ -142,6 +144,19 @@ function Conversation() {
         return;
       }
       if (data) setMessages((prev) => [...prev, data]);
+      // Email the human recipient only — never the sender, and at most once
+      // every 15 minutes so rapid messages group into a single nudge.
+      if (sender === "user" && isRealUserId(peer) && peer !== userId) {
+        void sendRelationshipEmail({
+          data: {
+            kind: "new_message",
+            recipientId: peer,
+            path: `/messages/${userId}`,
+            dedupeKey: `new_message:${userId}:${peer}:${Math.floor(Date.now() / 900_000)}`,
+            cooldownMinutes: 15,
+          },
+        }).catch(() => undefined);
+      }
     },
     [userId, peer],
   );

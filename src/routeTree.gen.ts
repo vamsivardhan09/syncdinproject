@@ -23,6 +23,7 @@ import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authentic
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedTwinRouteImport } from './routes/_authenticated/twin'
+import { Route as ApiEmailPreviewRouteImport } from './routes/api/email-preview'
 import { Route as AuthenticatedMessagesIndexRouteImport } from './routes/_authenticated/messages.index'
 import { Route as AuthenticatedMessagesPeerRouteImport } from './routes/_authenticated/messages.$peer'
 import { Route as AuthenticatedNetworksIndexRouteImport } from './routes/_authenticated/networks.index'
@@ -101,6 +102,11 @@ const AuthenticatedTwinRoute = AuthenticatedTwinRouteImport.update({
   path: '/twin',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const ApiEmailPreviewRoute = ApiEmailPreviewRouteImport.update({
+  id: '/api/email-preview',
+  path: '/api/email-preview',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedMessagesIndexRoute =
   AuthenticatedMessagesIndexRouteImport.update({
     id: '/',
@@ -162,6 +168,7 @@ export interface FileRoutesByFullPath {
   '/profile': typeof AuthenticatedProfileRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/twin': typeof AuthenticatedTwinRoute
+  '/api/email-preview': typeof ApiEmailPreviewRoute
   '/messages/$peer': typeof AuthenticatedMessagesPeerRoute
   '/networks/$code': typeof AuthenticatedNetworksCodeRoute
   '/people/$id': typeof AuthenticatedPeopleIdRoute
@@ -184,6 +191,7 @@ export interface FileRoutesByTo {
   '/profile': typeof AuthenticatedProfileRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/twin': typeof AuthenticatedTwinRoute
+  '/api/email-preview': typeof ApiEmailPreviewRoute
   '/messages/$peer': typeof AuthenticatedMessagesPeerRoute
   '/networks/$code': typeof AuthenticatedNetworksCodeRoute
   '/people/$id': typeof AuthenticatedPeopleIdRoute
@@ -209,6 +217,7 @@ export interface FileRoutesById {
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/twin': typeof AuthenticatedTwinRoute
+  '/api/email-preview': typeof ApiEmailPreviewRoute
   '/_authenticated/messages/$peer': typeof AuthenticatedMessagesPeerRoute
   '/_authenticated/networks/$code': typeof AuthenticatedNetworksCodeRoute
   '/_authenticated/people/$id': typeof AuthenticatedPeopleIdRoute
@@ -234,6 +243,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/settings'
     | '/twin'
+    | '/api/email-preview'
     | '/messages/$peer'
     | '/networks/$code'
     | '/people/$id'
@@ -256,6 +266,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/settings'
     | '/twin'
+    | '/api/email-preview'
     | '/messages/$peer'
     | '/networks/$code'
     | '/people/$id'
@@ -280,6 +291,7 @@ export interface FileRouteTypes {
     | '/_authenticated/profile'
     | '/_authenticated/settings'
     | '/_authenticated/twin'
+    | '/api/email-preview'
     | '/_authenticated/messages/$peer'
     | '/_authenticated/networks/$code'
     | '/_authenticated/people/$id'
@@ -298,6 +310,7 @@ export interface RootRouteChildren {
   ResetPasswordRoute: typeof ResetPasswordRoute
   SigninRoute: typeof SigninRoute
   SignupRoute: typeof SignupRoute
+  ApiEmailPreviewRoute: typeof ApiEmailPreviewRoute
   ApiPublicAuthLinkedinCallbackRoute: typeof ApiPublicAuthLinkedinCallbackRoute
   ApiPublicAuthLinkedinStartRoute: typeof ApiPublicAuthLinkedinStartRoute
 }
@@ -401,6 +414,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/twin'
       preLoaderRoute: typeof AuthenticatedTwinRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/api/email-preview': {
+      id: '/api/email-preview'
+      path: '/api/email-preview'
+      fullPath: '/api/email-preview'
+      preLoaderRoute: typeof ApiEmailPreviewRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_authenticated/messages/': {
       id: '/_authenticated/messages/'
@@ -523,9 +543,20 @@ const rootRouteChildren: RootRouteChildren = {
   ResetPasswordRoute: ResetPasswordRoute,
   SigninRoute: SigninRoute,
   SignupRoute: SignupRoute,
+  ApiEmailPreviewRoute: ApiEmailPreviewRoute,
   ApiPublicAuthLinkedinCallbackRoute: ApiPublicAuthLinkedinCallbackRoute,
   ApiPublicAuthLinkedinStartRoute: ApiPublicAuthLinkedinStartRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

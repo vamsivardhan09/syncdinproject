@@ -155,6 +155,36 @@ export type Database = {
         }
         Relationships: []
       }
+      email_deliveries: {
+        Row: {
+          actor_id: string | null
+          created_at: string
+          dedupe_key: string
+          id: string
+          kind: string
+          recipient_id: string
+          status: string
+        }
+        Insert: {
+          actor_id?: string | null
+          created_at?: string
+          dedupe_key: string
+          id?: string
+          kind: string
+          recipient_id: string
+          status?: string
+        }
+        Update: {
+          actor_id?: string | null
+          created_at?: string
+          dedupe_key?: string
+          id?: string
+          kind?: string
+          recipient_id?: string
+          status?: string
+        }
+        Relationships: []
+      }
       event_presence: {
         Row: {
           active: boolean
@@ -216,6 +246,7 @@ export type Database = {
           created_at: string
           id: string
           kind: string
+          metadata: Json
           read: boolean
           reference_id: string | null
           title: string
@@ -227,6 +258,7 @@ export type Database = {
           created_at?: string
           id?: string
           kind?: string
+          metadata?: Json
           read?: boolean
           reference_id?: string | null
           title: string
@@ -238,6 +270,7 @@ export type Database = {
           created_at?: string
           id?: string
           kind?: string
+          metadata?: Json
           read?: boolean
           reference_id?: string | null
           title?: string
@@ -249,6 +282,7 @@ export type Database = {
         Row: {
           avatar_url: string | null
           created_at: string
+          email_relationship_notifications: boolean
           full_name: string | null
           goals: string[]
           headline: string | null
@@ -271,6 +305,7 @@ export type Database = {
         Insert: {
           avatar_url?: string | null
           created_at?: string
+          email_relationship_notifications?: boolean
           full_name?: string | null
           goals?: string[]
           headline?: string | null
@@ -293,6 +328,7 @@ export type Database = {
         Update: {
           avatar_url?: string | null
           created_at?: string
+          email_relationship_notifications?: boolean
           full_name?: string | null
           goals?: string[]
           headline?: string | null

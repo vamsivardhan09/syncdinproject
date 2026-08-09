@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Bell, LogOut, RotateCcw, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/app-shell";
@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
+import { getEmailPreference, setEmailPreference } from "@/lib/real-people";
 import { useTwin } from "@/lib/twin-store";
 
 export const Route = createFileRoute("/_authenticated/settings")({
@@ -63,6 +64,12 @@ function Settings() {
   const [values, setValues] = useState<Record<string, boolean>>(
     Object.fromEntries(toggles.map((t) => [t.id, t.on])),
   );
+  const [emailPref, setEmailPref] = useState(true);
+  const [savingPref, setSavingPref] = useState(false);
+
+  useEffect(() => {
+    void getEmailPreference().then(setEmailPref);
+  }, []);
 
   async function signOut() {
     await supabase.auth.signOut();
@@ -78,7 +85,38 @@ function Settings() {
         </p>
       </header>
 
-      <section className="surface-card mt-8 divide-y divide-border p-0">
+      <section className="surface-card mt-8 p-5">
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0">
+            <Label htmlFor="relationship-emails" className="text-sm font-semibold">
+              Relationship emails
+            </Label>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Email me when someone sends a connection request, accepts my request, messages me, or
+              my Twin finds people worth meeting at an event. No marketing — only these events.
+            </p>
+          </div>
+          <Switch
+            id="relationship-emails"
+            checked={emailPref}
+            disabled={savingPref}
+            onCheckedChange={(v) => {
+              const previous = emailPref;
+              setEmailPref(v);
+              setSavingPref(true);
+              void setEmailPreference(v)
+                .then(() => toast.success(`Relationship emails ${v ? "on" : "off"}`))
+                .catch((e: unknown) => {
+                  setEmailPref(previous);
+                  toast.error(e instanceof Error ? e.message : "Could not save that.");
+                })
+                .finally(() => setSavingPref(false));
+            }}
+          />
+        </div>
+      </section>
+
+      <section className="surface-card mt-4 divide-y divide-border p-0">
         {toggles.map((t) => (
           <div key={t.id} className="flex items-start justify-between gap-4 p-5">
             <div className="min-w-0">

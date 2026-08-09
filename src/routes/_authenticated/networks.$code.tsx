@@ -9,7 +9,6 @@ import {
   Handshake,
   Loader2,
   Radar,
-  Sparkle,
   Users,
 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
@@ -396,7 +395,7 @@ function MatchCard({
 
       <div className="mt-5 flex flex-wrap gap-2">
         <Button className="flex-1" onClick={onScreen}>
-          <Sparkle aria-hidden="true" className="size-4" /> Let our Twins talk
+          <Radar aria-hidden="true" className="size-4" /> Let our Twins talk
         </Button>
         <Button
           variant={connected ? "secondary" : "outline"}

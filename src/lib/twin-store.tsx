@@ -325,9 +325,25 @@ export function TwinProvider({ children }: { children: ReactNode }) {
     );
   }, []);
 
+  // Onboarding completion is a server fact: it also makes the member
+  // discoverable so other real accounts can find and connect with them.
   const completeOnboarding = useCallback(() => {
     setState((prev) => ({ ...prev, onboarded: true }));
+    void (async () => {
+      try {
+        const { supabase } = await import("@/integrations/supabase/client");
+        const { data } = await supabase.auth.getUser();
+        if (!data.user) return;
+        await supabase
+          .from("profiles")
+          .update({ onboarded: true, is_discoverable: true })
+          .eq("id", data.user.id);
+      } catch {
+        /* the local flag still lets the user continue */
+      }
+    })();
   }, []);
+
 
   const reset = useCallback(() => {
     setState(initialState);

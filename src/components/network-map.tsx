@@ -101,6 +101,7 @@ export function NetworkMap() {
   const [query, setQuery] = useState("");
   const [searching, setSearching] = useState(false);
   const [visibleSlugs, setVisibleSlugs] = useState<string[] | null>(null);
+  const [visibleBoundsKey, setVisibleBoundsKey] = useState<string | null>(null);
 
   const persistLocation = useServerFn(saveMyLocation);
   const readLocation = useServerFn(getMyLocation);
@@ -158,8 +159,6 @@ export function NetworkMap() {
       cancelled = true;
     };
   }, []);
-
-  const [visibleBoundsKey, setVisibleBoundsKey] = useState<string | null>(null);
 
   /** Restore the stored location so the "you are here" pin survives refresh. */
   useEffect(() => {

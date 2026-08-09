@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/app-shell";
+import { TwinMatchPanel } from "@/components/twin-match-panel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -27,6 +28,9 @@ import {
   type ConnectionRequest,
   type PublicProfile,
 } from "@/lib/real-people";
+import { activityOf, twinBrief } from "@/lib/twin-compatibility";
+import { useTwinVector } from "@/lib/use-twin-vector";
+
 
 export const Route = createFileRoute("/_authenticated/people/$id")({
   head: () => ({

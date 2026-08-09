@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { Bell, Check, Loader2, Radar } from "lucide-react";
+import { Bell, Check, Loader2, Radar, UserPlus, UserX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
@@ -8,6 +8,12 @@ import {
   markAllRead,
   type NotificationRow,
 } from "@/lib/network-activity";
+import {
+  displayName,
+  fetchActors,
+  initialsOf,
+  type PublicProfile,
+} from "@/lib/real-people";
 import { useTwin } from "@/lib/twin-store";
 
 function timeAgo(iso: string) {
@@ -19,17 +25,58 @@ function timeAgo(iso: string) {
   return `${Math.round(hours / 24)}d ago`;
 }
 
+function KindIcon({ kind, read }: { kind: string; read: boolean }) {
+  const cls = read ? "size-4 shrink-0 text-muted-foreground" : "size-4 shrink-0 text-primary";
+  if (kind === "connection_request") return <UserPlus aria-hidden="true" className={cls} />;
+  if (kind === "connection_declined") return <UserX aria-hidden="true" className={cls} />;
+  if (kind === "connection_accepted") return <Check aria-hidden="true" className={cls} />;
+  return <Radar aria-hidden="true" className={cls} />;
+}
+
+/** Avatar of the person who caused the notification — never a stand-in demo logo. */
+function ActorAvatar({ actor }: { actor: PublicProfile }) {
+  const name = displayName(actor);
+  return actor.avatar_url ? (
+    <img
+      src={actor.avatar_url}
+      alt={name}
+      loading="lazy"
+      className="size-9 shrink-0 rounded-full object-cover ring-1 ring-border"
+    />
+  ) : (
+    <span
+      aria-hidden="true"
+      className="grid size-9 shrink-0 place-items-center rounded-full bg-primary-soft text-xs font-bold text-primary"
+    >
+      {initialsOf(name)}
+    </span>
+  );
+}
+
 /** Activity bell: real persisted notifications only, with an unread count. */
 export function NotificationBell() {
   const { state } = useTwin();
   const [open, setOpen] = useState(false);
   const [rows, setRows] = useState<NotificationRow[] | null>(null);
+  const [actors, setActors] = useState<Map<string, PublicProfile>>(new Map());
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(() => {
     setError(null);
     void listNotifications(15)
-      .then(setRows)
+      .then(async (list) => {
+        setRows(list);
+        const ids = list.map((r) => r.actor_id).filter((id): id is string => Boolean(id));
+        if (ids.length === 0) {
+          setActors(new Map());
+          return;
+        }
+        try {
+          setActors(await fetchActors(ids));
+        } catch {
+          /* actor lookup is decorative — the notification text still stands */
+        }
+      })
       .catch((err: Error) => setError(err.message));
   }, []);
 
@@ -103,23 +150,46 @@ export function NotificationBell() {
             </p>
           ) : (
             <ul className="divide-y divide-border">
-              {rows.map((row) => (
-                <li key={row.id} className="flex items-start gap-2.5 px-4 py-3 text-sm">
-                  <Radar
-                    aria-hidden="true"
-                    className={row.read ? "mt-0.5 size-4 shrink-0 text-muted-foreground" : "mt-0.5 size-4 shrink-0 text-primary"}
-                  />
-                  <span className="min-w-0">
-                    <span className="block font-semibold">{row.title}</span>
-                    {row.body ? (
-                      <span className="block text-xs text-muted-foreground">{row.body}</span>
-                    ) : null}
-                    <span className="mt-0.5 block text-[11px] text-muted-foreground">
-                      {timeAgo(row.created_at)}
+              {rows.map((row) => {
+                const actor = row.actor_id ? actors.get(row.actor_id) : undefined;
+                const body = (
+                  <span className="flex items-start gap-2.5">
+                    {actor ? <ActorAvatar actor={actor} /> : <KindIcon kind={row.kind} read={row.read} />}
+                    <span className="min-w-0">
+                      <span className="block font-semibold">{row.title}</span>
+                      {row.body ? (
+                        <span className="block text-xs text-muted-foreground">{row.body}</span>
+                      ) : null}
+                      <span className="mt-0.5 block text-[11px] text-muted-foreground">
+                        {timeAgo(row.created_at)}
+                      </span>
                     </span>
+                    {!row.read ? (
+                      <span
+                        aria-label="Unread"
+                        className="mt-1.5 ml-auto size-2 shrink-0 rounded-full bg-primary"
+                      />
+                    ) : null}
                   </span>
-                </li>
-              ))}
+                );
+
+                return (
+                  <li key={row.id} className="text-sm">
+                    {row.actor_id ? (
+                      <Link
+                        to="/people/$id"
+                        params={{ id: row.actor_id }}
+                        onClick={() => setOpen(false)}
+                        className="focus-ring block px-4 py-3 hover:bg-accent"
+                      >
+                        {body}
+                      </Link>
+                    ) : (
+                      <div className="px-4 py-3">{body}</div>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
           )}
         </div>

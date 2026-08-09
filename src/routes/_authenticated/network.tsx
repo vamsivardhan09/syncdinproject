@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import { motion } from "motion/react";
 import { ArrowRight, Search } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
+import { RealPeopleDirectory } from "@/components/real-people-directory";
 import { RecommendationCard } from "@/components/recommendation-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

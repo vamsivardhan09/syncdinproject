@@ -368,16 +368,22 @@ function Twin() {
                     Paste your live site or portfolio URL. Your Twin reads it and scores how much
                     signal it adds.
                   </p>
+                ) : sourceId === "github" ? (
+                  <p className="mt-3 text-sm text-muted-foreground">
+                    Paste your GitHub profile URL. Your Twin reads your public repositories,
+                    languages and topics to understand what you actually build.
+                  </p>
                 ) : (
                   <p className="mt-3 text-sm text-muted-foreground">
-                    Connecting {source.name} could improve matching by ~
-                    {Math.round(source.gain)}%. Never required — connect whenever you're ready.
+                    Paste your LinkedIn profile URL. Your Twin reads the public profile page and
+                    extracts your headline, skills and focus areas.
                     <span className="mt-1 block text-xs">
-                      Prototype: live {source.name} OAuth is not enabled yet, so this uses seeded
-                      enrichment. No private data is read.
+                      Public profile data only — no credentials, no private data. Where LinkedIn
+                      blocks the page, a clearly-labelled demo import fills in for the prototype.
                     </span>
                   </p>
                 )}
+
 
                 <Button
                   className="mt-4 w-full"

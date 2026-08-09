@@ -46,6 +46,34 @@ export async function markActivityRead(ids: string[]) {
   await supabase.from("notifications").update({ read: true }).in("id", ids);
 }
 
+export type NotificationRow = TwinActivity & { read: boolean };
+
+/** Recent activity for the notification panel — read and unread. */
+export async function listNotifications(limit = 15): Promise<NotificationRow[]> {
+  const user = await uid();
+  if (!user) return [];
+  const { data, error } = await supabase
+    .from("notifications")
+    .select("id, title, body, read, created_at")
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error) throw new Error(error.message);
+  return data ?? [];
+}
+
+/** Marks every unread notification as read. */
+export async function markAllRead() {
+  const user = await uid();
+  if (!user) return;
+  const { error } = await supabase
+    .from("notifications")
+    .update({ read: true })
+    .eq("user_id", user)
+    .eq("read", false);
+  if (error) throw new Error(error.message);
+}
+
+
 /** Persists a connection so the loop has memory across devices. */
 export async function saveConnection(peerSlug: string) {
   const user = await uid();

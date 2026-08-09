@@ -136,19 +136,26 @@ export async function saveTwinSignals(signals: TwinSignals): Promise<void> {
       ? Array.from(new Set(values.map((v) => v.trim()).filter(Boolean))).slice(0, 40)
       : undefined;
 
-  const payload: Record<string, unknown> = {};
-  if (signals.headline !== undefined) payload["headline"] = signals.headline?.slice(0, 140) ?? null;
+  const payload: {
+    headline?: string | null;
+    twin_summary?: string | null;
+    skills?: string[];
+    goals?: string[];
+    interests?: string[];
+  } = {};
+  if (signals.headline !== undefined) payload.headline = signals.headline?.slice(0, 140) ?? null;
   if (signals.twin_summary !== undefined)
-    payload["twin_summary"] = signals.twin_summary?.slice(0, 800) ?? null;
+    payload.twin_summary = signals.twin_summary?.slice(0, 800) ?? null;
   const skills = clean(signals.skills);
   const goals = clean(signals.goals);
   const interests = clean(signals.interests);
-  if (skills) payload["skills"] = skills;
-  if (goals) payload["goals"] = goals;
-  if (interests) payload["interests"] = interests;
+  if (skills) payload.skills = skills;
+  if (goals) payload.goals = goals;
+  if (interests) payload.interests = interests;
   if (Object.keys(payload).length === 0) return;
 
   const { error } = await supabase.from("profiles").update(payload).eq("id", me);
+
   if (error) throw new Error(error.message);
 }
 

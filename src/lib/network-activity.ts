@@ -46,7 +46,13 @@ export async function markActivityRead(ids: string[]) {
   await supabase.from("notifications").update({ read: true }).in("id", ids);
 }
 
-export type NotificationRow = TwinActivity & { read: boolean };
+export type NotificationRow = TwinActivity & {
+  read: boolean;
+  /** Who caused it (a real SyncdIn member), when there is one. */
+  actor_id: string | null;
+  kind: string;
+  reference_id: string | null;
+};
 
 /** Recent activity for the notification panel — read and unread. */
 export async function listNotifications(limit = 15): Promise<NotificationRow[]> {
@@ -54,11 +60,12 @@ export async function listNotifications(limit = 15): Promise<NotificationRow[]> 
   if (!user) return [];
   const { data, error } = await supabase
     .from("notifications")
-    .select("id, title, body, read, created_at")
+    .select("id, title, body, read, created_at, actor_id, kind, reference_id")
     .order("created_at", { ascending: false })
     .limit(limit);
   if (error) throw new Error(error.message);
-  return data ?? [];
+  return (data ?? []).map((row) => ({ ...row, kind: row.kind ?? "system" }));
+
 }
 
 /** Marks every unread notification as read. */

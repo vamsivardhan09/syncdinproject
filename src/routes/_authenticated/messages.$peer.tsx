@@ -146,12 +146,38 @@ function Conversation() {
     [userId, peer],
   );
 
+  // Event attendees are generated client-side, so the server can't look them
+  // up by slug — the profile travels with the request.
+  const peerProfile = useMemo(
+    () => ({
+      name: person.name,
+      role: person.role,
+      company: person.company,
+      kind: person.kind,
+      location: person.location,
+      bio: person.bio,
+      skills: person.skills,
+      interests: person.interests,
+      goals: person.goals,
+      projects: person.projects,
+      reasons: person.reasons,
+      suggestedCollaboration: person.suggestedCollaboration,
+    }),
+    [person],
+  );
+
   const twinTurn = useCallback(
     async (speaker: "peer" | "user", transcript: { sender: "user" | "peer"; body: string }[]) => {
       setThinking(speaker);
       try {
         const { text } = await runTwin({
-          data: { speaker, peerId: peer, userContext, transcript: transcript.slice(-20) },
+          data: {
+            speaker,
+            peerId: peer,
+            peerProfile,
+            userContext,
+            transcript: transcript.slice(-20),
+          },
         });
         await persist(speaker, text);
         return text;
@@ -162,7 +188,7 @@ function Conversation() {
         setThinking(null);
       }
     },
-    [runTwin, peer, userContext, persist],
+    [runTwin, peer, peerProfile, userContext, persist],
   );
 
   const transcriptOf = useCallback(

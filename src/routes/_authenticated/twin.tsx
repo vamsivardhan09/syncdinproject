@@ -312,8 +312,13 @@ function Twin() {
                   <p className="mt-3 text-sm text-muted-foreground">
                     Connecting {source.name} could improve matching by ~
                     {Math.round(source.gain)}%. Never required — connect whenever you're ready.
+                    <span className="mt-1 block text-xs">
+                      Prototype: live {source.name} OAuth is not enabled yet, so this uses seeded
+                      enrichment. No private data is read.
+                    </span>
                   </p>
                 )}
+
                 <Button
                   className="mt-4 w-full"
                   variant={done ? "secondary" : "default"}

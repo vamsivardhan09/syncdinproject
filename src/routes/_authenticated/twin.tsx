@@ -31,11 +31,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { importSources, trainingSources } from "@/lib/demo-data";
 import { SOURCE_SIGNALS } from "@/lib/matching";
+import { importGitHub, importLinkedIn, normalizeLinkedInUrl } from "@/lib/profile-import";
 import { syncFlows, type SyncFlow } from "@/lib/sync-flows";
-import { analyzePortfolio, analyzeResume } from "@/lib/twin-analyze.functions";
+import { TeachTwinModal } from "@/components/teach-twin-modal";
+import { analyzePortfolio, analyzeResume, analyzeText } from "@/lib/twin-analyze.functions";
 import { openGaps, twinKnowledge } from "@/lib/twin-knowledge";
 import { useTwin } from "@/lib/twin-store";
 import { cn } from "@/lib/utils";
+
 
 
 
@@ -86,6 +89,10 @@ function Twin() {
   const [run, setRun] = useState<AnalysisRun | null>(null);
   const [portfolioOpen, setPortfolioOpen] = useState(false);
   const [portfolioUrl, setPortfolioUrl] = useState("");
+  const [urlAsk, setUrlAsk] = useState<"linkedin" | "github" | null>(null);
+  const [askValue, setAskValue] = useState("");
+  const [teach, setTeach] = useState<string | null>(null);
+
   const [result, setResult] = useState<{
     name: string;
     signals: number;
@@ -169,6 +176,57 @@ function Twin() {
     });
   };
 
+  /** LinkedIn / GitHub: ask for the profile URL first, then read it during the sync animation. */
+  const submitProfileUrl = () => {
+    const raw = askValue.trim();
+    if (!raw) return;
+
+    if (urlAsk === "linkedin") {
+      const normalized = normalizeLinkedInUrl(raw);
+      if (!normalized) {
+        toast.error("Paste your linkedin.com/in/… profile URL.");
+        return;
+      }
+      setUrlAsk(null);
+      setAskValue("");
+      startSync("linkedin", "import", async () => {
+        try {
+          const live = await analyzePortfolio({ data: { url: normalized.url } });
+          if (live.skills.length >= 3) {
+            return {
+              summary: live.summary,
+              discovered: [`${Math.round(live.strengthPct)}% profile signal`, ...live.discovered],
+            };
+          }
+        } catch {
+          // LinkedIn gates most profiles — fall back to the structured demo adapter.
+        }
+        const demo = importLinkedIn(normalized.url);
+        return { summary: demo.summary, discovered: demo.discovered };
+      });
+      return;
+    }
+
+    if (urlAsk === "github") {
+      setUrlAsk(null);
+      setAskValue("");
+      startSync("github", "import", async () => {
+        const signals = await importGitHub(raw);
+        return { summary: signals.summary, discovered: signals.discovered };
+      });
+    }
+  };
+
+  /** ChatGPT / Claude / Gemini: the user pastes the assistant's report on themselves. */
+  const submitTeachText = (assistant: string, text: string) => {
+    startSync(assistant.toLowerCase(), "training", async () => {
+      const analysis = await analyzeText({ data: { text } });
+      return {
+        summary: analysis.summary,
+        discovered: [`${Math.round(analysis.strengthPct)}% reasoning signal`, ...analysis.discovered],
+      };
+    });
+  };
 
 
   return (
@@ -278,8 +336,10 @@ function Twin() {
         <h2 className="text-xl font-bold">Career &amp; project sources</h2>
         <div className="mt-5 grid gap-4 sm:grid-cols-2">
           {importSources.map((source) => {
+            const sourceId: string = source.id;
             const Icon = icons[source.id] ?? Globe;
             const done = state.connectedSources.includes(source.id);
+
             return (
               <motion.article
                 key={source.id}
@@ -308,16 +368,22 @@ function Twin() {
                     Paste your live site or portfolio URL. Your Twin reads it and scores how much
                     signal it adds.
                   </p>
+                ) : sourceId === "github" ? (
+                  <p className="mt-3 text-sm text-muted-foreground">
+                    Paste your GitHub profile URL. Your Twin reads your public repositories,
+                    languages and topics to understand what you actually build.
+                  </p>
                 ) : (
                   <p className="mt-3 text-sm text-muted-foreground">
-                    Connecting {source.name} could improve matching by ~
-                    {Math.round(source.gain)}%. Never required — connect whenever you're ready.
+                    Paste your LinkedIn profile URL. Your Twin reads the public profile page and
+                    extracts your headline, skills and focus areas.
                     <span className="mt-1 block text-xs">
-                      Prototype: live {source.name} OAuth is not enabled yet, so this uses seeded
-                      enrichment. No private data is read.
+                      Public profile data only — no credentials, no private data. Where LinkedIn
+                      blocks the page, a clearly-labelled demo import fills in for the prototype.
                     </span>
                   </p>
                 )}
+
 
                 <Button
                   className="mt-4 w-full"
@@ -326,7 +392,13 @@ function Twin() {
                   onClick={() => {
                     if (source.id === "resume") fileInput.current?.click();
                     else if (source.id === "portfolio") setPortfolioOpen(true);
-                    else startSync(source.id, "import");
+                    else if (sourceId === "linkedin" || sourceId === "github") {
+                      setAskValue("");
+                      setUrlAsk(sourceId);
+                    } else startSync(sourceId, "import");
+
+
+
                   }}
                 >
                   {done ? (
@@ -355,10 +427,11 @@ function Twin() {
       <section className="mt-10">
         <h2 className="text-xl font-bold">Teach it how you think</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Connect an AI assistant so your Twin borrows your reasoning and your voice. In this
-          prototype these are demo integrations — SyncdIn never reads private chat history without an
-          official export or API permission.
+          Your assistant already knows how you work. Copy one prompt into it, paste the answer back,
+          and your Twin borrows your reasoning and your voice. SyncdIn never reads your private chat
+          history — you choose exactly what to hand over.
         </p>
+
 
         <div className="mt-5 space-y-4">
           {trainingSources.map((source) => {
@@ -380,7 +453,7 @@ function Twin() {
                       className="mt-2"
                       variant={done ? "secondary" : "default"}
                       disabled={done}
-                      onClick={() => startSync(source.id, "training")}
+                      onClick={() => setTeach(source.name)}
                     >
                       {done ? (
                         <>
@@ -441,6 +514,58 @@ function Twin() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={urlAsk !== null} onOpenChange={(open) => (open ? null : setUrlAsk(null))}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {urlAsk === "github" ? "Your GitHub profile" : "Your LinkedIn profile"}
+            </DialogTitle>
+            <DialogDescription>
+              {urlAsk === "github"
+                ? "Your Twin reads your public repositories, languages and topics to understand what you build."
+                : "Your Twin reads your public profile page and extracts your headline, skills and focus areas."}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="profile-url">Profile URL</Label>
+            <Input
+              id="profile-url"
+              autoFocus
+              placeholder={
+                urlAsk === "github"
+                  ? "https://github.com/yourname"
+                  : "https://linkedin.com/in/yourname"
+              }
+              value={askValue}
+              onChange={(event) => setAskValue(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") submitProfileUrl();
+              }}
+            />
+            <p className="text-xs text-muted-foreground">
+              Public data only. No password, no private data, nothing posted on your behalf.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setUrlAsk(null)}>
+              Cancel
+            </Button>
+            <Button onClick={submitProfileUrl} disabled={!askValue.trim()}>
+              Continue
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <TeachTwinModal
+        assistant={teach}
+        onClose={() => setTeach(null)}
+        onSubmit={(text) => {
+          if (teach) submitTeachText(teach, text);
+        }}
+      />
+
 
       <ConnectSyncModal
         flow={activeFlow}

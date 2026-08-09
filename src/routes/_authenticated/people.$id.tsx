@@ -69,11 +69,11 @@ function MemberProfile() {
     }
     void (async () => {
       try {
-        const [profile, me, request] = await Promise.all([
-          getPublicProfile(id),
-          currentUserId(),
-          getRequestWith(id),
-        ]);
+        // Sequential: concurrent auth reads can stall on the session lock.
+        const me = await currentUserId();
+        const profile = await getPublicProfile(id);
+        const request = await getRequestWith(id);
+
         if (!profile) {
           setState({ phase: "missing" });
           return;

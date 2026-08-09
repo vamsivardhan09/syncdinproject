@@ -214,20 +214,24 @@ export function TwinProvider({ children }: { children: ReactNode }) {
 
 
   const toggleConnection = useCallback((id: string) => {
-    setState((prev) => ({
-      ...prev,
-      connectionsMade: prev.connectionsMade.includes(id)
-        ? prev.connectionsMade.filter((c) => c !== id)
-        : [...prev.connectionsMade, id],
-    }));
+    setState((prev) => {
+      const has = prev.connectionsMade.includes(id);
+      void persistConnection(id, has);
+      return {
+        ...prev,
+        connectionsMade: has
+          ? prev.connectionsMade.filter((c) => c !== id)
+          : [...prev.connectionsMade, id],
+      };
+    });
   }, []);
 
   const connect = useCallback((id: string) => {
-    setState((prev) =>
-      prev.connectionsMade.includes(id)
-        ? prev
-        : { ...prev, connectionsMade: [...prev.connectionsMade, id] },
-    );
+    setState((prev) => {
+      if (prev.connectionsMade.includes(id)) return prev;
+      void persistConnection(id);
+      return { ...prev, connectionsMade: [...prev.connectionsMade, id] };
+    });
   }, []);
 
   const joinNetwork = useCallback((code: string) => {

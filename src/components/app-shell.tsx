@@ -15,6 +15,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { BrandLogo } from "@/components/brand-logo";
 import { Button } from "@/components/ui/button";
+import { nextBestAction } from "@/lib/twin-knowledge";
 import { useTwin } from "@/lib/twin-store";
 import { cn } from "@/lib/utils";
 

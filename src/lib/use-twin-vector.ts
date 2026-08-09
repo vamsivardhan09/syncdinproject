@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { buildTwinVector, type TwinVector } from "@/lib/matching";
-import { getMyProfile, profileNoise, type MyProfile } from "@/lib/real-people";
+import { getMyProfile, type MyProfile } from "@/lib/real-people";
+import { profileSignals } from "@/lib/twin-compatibility";
+
 import { useTwin } from "@/lib/twin-store";
 
 /**

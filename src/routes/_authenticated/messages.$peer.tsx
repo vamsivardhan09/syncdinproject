@@ -34,9 +34,13 @@ export const Route = createFileRoute("/_authenticated/messages/$peer")({
   head: ({ loaderData }) => {
     if (!loaderData) {
       return {
-        meta: [{ title: "Conversation unavailable" }, { name: "robots", content: "noindex" }],
+        meta: [
+          { title: "Twin conversation — SyncdIn" },
+          { name: "robots", content: "noindex" },
+        ],
       };
     }
+
     const title = `Chat with ${loaderData.name} — SyncdIn`;
     const description = `Your AI Twin is talking to ${loaderData.name}, ${loaderData.role} at ${loaderData.company}. Jump in any time.`;
     return {

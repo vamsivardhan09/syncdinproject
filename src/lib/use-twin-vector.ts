@@ -47,7 +47,7 @@ export function useTwinVector(): {
         connectionsMade: state.connectionsMade,
         intelligence,
         headline: profile?.headline ?? null,
-        profileSignals: profileNoise(profile),
+        profileSignals: profile ? profileSignals(profile) : [],
       }),
     [state, intelligence, profile],
   );

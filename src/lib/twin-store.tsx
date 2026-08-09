@@ -235,6 +235,7 @@ export function TwinProvider({ children }: { children: ReactNode }) {
     setState((prev) => {
       const has = prev.connectionsMade.includes(id);
       void persistConnection(id, has);
+      if (!has) void noteNewConnection(id);
       return {
         ...prev,
         connectionsMade: has
@@ -248,9 +249,11 @@ export function TwinProvider({ children }: { children: ReactNode }) {
     setState((prev) => {
       if (prev.connectionsMade.includes(id)) return prev;
       void persistConnection(id);
+      void noteNewConnection(id);
       return { ...prev, connectionsMade: [...prev.connectionsMade, id] };
     });
   }, []);
+
 
   const joinNetwork = useCallback((code: string) => {
     setState((prev) =>

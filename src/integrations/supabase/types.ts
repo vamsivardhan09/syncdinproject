@@ -18,6 +18,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          intro_note: string | null
           recipient_id: string
           requester_id: string
           responded_at: string | null
@@ -27,6 +28,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          intro_note?: string | null
           recipient_id: string
           requester_id: string
           responded_at?: string | null
@@ -36,6 +38,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          intro_note?: string | null
           recipient_id?: string
           requester_id?: string
           responded_at?: string | null

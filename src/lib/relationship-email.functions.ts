@@ -121,7 +121,7 @@ export const sendRelationshipEmail = createServerFn({ method: "POST" })
     const { data: actorProfile } = await supabaseAdmin
       .from("profiles")
       .select("full_name, headline, avatar_url")
-      .eq("id", actorId)
+      .eq("id", displayId)
       .maybeSingle();
 
     const { data: userRes, error: userErr } = await supabaseAdmin.auth.admin.getUserById(

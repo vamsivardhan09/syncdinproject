@@ -22,9 +22,15 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/_authenticated/messages/$peer")({
   loader: ({ params }) => {
     const person = resolvePerson(params.peer);
-    if (!person) throw notFound();
+    // Real members are loaded from the backend in the component, so only an
+    // unknown demo slug is a genuine not-found.
+    if (!person) {
+      if (isRealUserId(params.peer)) return null;
+      throw notFound();
+    }
     return { name: person.name, role: person.role, company: person.company };
   },
+
   head: ({ loaderData }) => {
     if (!loaderData) {
       return {

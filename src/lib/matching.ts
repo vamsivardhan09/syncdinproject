@@ -30,7 +30,7 @@ export type TwinVector = {
 };
 
 /** Signals unlocked by each Twin source. Mirrors demo-data source ids. */
-const SOURCE_SIGNALS: Record<string, string[]> = {
+export const SOURCE_SIGNALS: Record<string, string[]> = {
   linkedin: [
     "Product strategy",
     "Go-to-market",

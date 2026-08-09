@@ -64,6 +64,8 @@ function MemberProfile() {
   const router = useRouter();
   const [state, setState] = useState<State>({ phase: "loading" });
   const [busy, setBusy] = useState(false);
+  const { vector, profile: myProfile } = useTwinVector();
+
 
   const load = useCallback(() => {
     setState({ phase: "loading" });

@@ -99,9 +99,17 @@ function Twin() {
 
   const commit = () => {
     if (!pending) return;
+    const gain = gainFor(pending.id);
+    const signals = SOURCE_SIGNALS[pending.id]?.length ?? 3;
+    const name =
+      importSources.find((s) => s.id === pending.id)?.name ??
+      trainingSources.find((s) => s.id === pending.id)?.name ??
+      "New source";
     if (pending.kind === "import") connectSource(pending.id);
     else trainSource(pending.id);
+    setResult({ name, signals, from: baseline, to: Math.min(99, baseline + gain) });
   };
+
 
   const handleResumeFile = async (file: File) => {
     if (file.size > 12 * 1024 * 1024) {

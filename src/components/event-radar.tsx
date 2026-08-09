@@ -109,8 +109,25 @@ export function EventRadar({ network }: { network: EventNetwork }) {
           body: `Top match: ${topFive[0]!.candidate.name} at ${topFive[0]!.score}%.`,
         },
       ]);
+      // One email per person per event: the radar result is worth returning for.
+      void (async () => {
+        const me = await currentUserId();
+        if (!me) return;
+        await sendRelationshipEmail({
+          data: {
+            kind: "event_match",
+            recipientId: me,
+            path: `/networks/${network.code}`,
+            dedupeKey: `event_match:${me}:${network.code}`,
+            eventTitle: network.name,
+            reasons: topFive
+              .slice(0, 3)
+              .map((m) => `${m.candidate.name} — ${m.score}% fit${m.topTopic ? ` on ${m.topTopic}` : ""}`),
+          },
+        }).catch(() => undefined);
+      })();
     }, 2500);
-  }, [network.name, topFive]);
+  }, [network.code, network.name, topFive]);
 
   async function handleConnect(match: RadarMatch, intro: string) {
     const result = await connect(match.candidate.id);

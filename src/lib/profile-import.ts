@@ -42,7 +42,7 @@ export function normalizeLinkedInUrl(input: string): { url: string; slug: string
   if (!/(^|\.)linkedin\.com$/i.test(parsed.hostname)) return null;
   const match = /^\/in\/([A-Za-z0-9\-_%.]{3,100})\/?$/.exec(parsed.pathname.replace(/\/+$/, "/"));
   if (!match) return null;
-  const slug = decodeURIComponent(match[1]).toLowerCase();
+  const slug = decodeURIComponent(match[1] ?? "").toLowerCase();
   return { url: `https://www.linkedin.com/in/${slug}`, slug };
 }
 
@@ -79,7 +79,7 @@ function pick<T>(list: readonly T[], seed: number, count: number): T[] {
   const out: T[] = [];
   for (let i = 0; i < count && i < list.length; i += 1) {
     const item = list[(seed + i * 7) % list.length];
-    if (!out.includes(item)) out.push(item);
+    if (item !== undefined && !out.includes(item)) out.push(item);
   }
   return out;
 }
@@ -126,7 +126,7 @@ export function importLinkedIn(url: string, fallbackName?: string | null): Impor
   const normalized = normalizeLinkedInUrl(url);
   if (!normalized) throw new Error("That doesn't look like a linkedin.com/in/… profile URL.");
   const seed = hash(normalized.slug);
-  const persona = PERSONAS[seed % PERSONAS.length];
+  const persona = PERSONAS[seed % PERSONAS.length] ?? PERSONAS[0];
   const skills = pick(persona.skills, seed, 5);
   const goals = pick(persona.goals, seed, 3);
   const interests = pick(persona.interests, seed, 3);

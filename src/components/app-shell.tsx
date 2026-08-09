@@ -31,7 +31,8 @@ const nav = [
 
 export function AppShell({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
-  const { intelligence } = useTwin();
+  const { state, intelligence } = useTwin();
+  const next = nextBestAction([...state.connectedSources, ...state.trainedSources]);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState<string | null>(null);

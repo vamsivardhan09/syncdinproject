@@ -201,22 +201,26 @@ function Conversation() {
   // Event attendees are generated client-side, so the server can't look them
   // up by slug — the profile travels with the request.
   const peerProfile = useMemo(
-    () => ({
-      name: person.name,
-      role: person.role,
-      company: person.company,
-      kind: person.kind,
-      location: person.location,
-      bio: person.bio,
-      skills: person.skills,
-      interests: person.interests,
-      goals: person.goals,
-      projects: person.projects,
-      reasons: person.reasons,
-      suggestedCollaboration: person.suggestedCollaboration,
-    }),
+    () =>
+      person
+        ? {
+            name: person.name,
+            role: person.role,
+            company: person.company,
+            kind: person.kind,
+            location: person.location,
+            bio: person.bio,
+            skills: person.skills,
+            interests: person.interests,
+            goals: person.goals,
+            projects: person.projects,
+            reasons: person.reasons,
+            suggestedCollaboration: person.suggestedCollaboration,
+          }
+        : undefined,
     [person],
   );
+
 
   const twinTurn = useCallback(
     async (speaker: "peer" | "user", transcript: { sender: "user" | "peer"; body: string }[]) => {

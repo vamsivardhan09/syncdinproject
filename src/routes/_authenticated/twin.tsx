@@ -280,59 +280,7 @@ function Twin() {
         ) : null}
       </AnimatePresence>
 
-      <div className="mt-8 grid gap-6 lg:grid-cols-[1.2fr_1fr]">
-        <TwinIntelligencePanel intelligence={intelligence} dimensions={dimensions} />
-        <section className="surface-card border-primary/25 bg-primary-soft/50 p-6">
-          <h2 className="text-lg font-bold">Your Twin knows…</h2>
-          {knowledge.length === 0 ? (
-            <p className="mt-3 text-sm text-muted-foreground">
-              Nothing about you yet — it is matching on generic AI-industry signal only. Connect one
-              source below and this fills in immediately.
-            </p>
-          ) : (
-            <dl className="mt-4 space-y-3">
-              {knowledge.map((group) => (
-                <div key={group.key}>
-                  <dt className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-                    {group.label}
-                  </dt>
-                  <dd className="mt-1.5 flex flex-wrap gap-1.5">
-                    {group.items.map((item) => (
-                      <Badge key={item} variant="outline" className="font-normal">
-                        {item}
-                      </Badge>
-                    ))}
-                  </dd>
-                </div>
-              ))}
-            </dl>
-          )}
-          <p className="mt-4 text-sm">
-            Reading {state.connectedSources.length + state.trainedSources.length} of{" "}
-            {importSources.length + trainingSources.length} available sources.
-          </p>
-        </section>
-      </div>
-
-      {gaps.length > 0 ? (
-        <section className="mt-8">
-          <h2 className="text-xl font-bold">Missing signal — and what it unlocks</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Ordered by how much each one improves your matches.
-          </p>
-          <ul className="mt-4 grid gap-3 sm:grid-cols-2">
-            {gaps.map((gap) => (
-              <li key={gap.id} className="surface-card p-4">
-                <p className="text-sm font-bold">{gap.missing}</p>
-                <p className="mt-1 text-sm text-muted-foreground">→ {gap.benefit}</p>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ) : null}
-
-
-      <section className="mt-10">
+      <section className="mt-8">
         <h2 className="text-xl font-bold">Career &amp; project sources</h2>
         <div className="mt-5 grid gap-4 sm:grid-cols-2">
           {importSources.map((source) => {
@@ -470,6 +418,57 @@ function Twin() {
           })}
         </div>
       </section>
+
+      <div className="mt-10 grid gap-6 lg:grid-cols-[1.2fr_1fr]">
+        <TwinIntelligencePanel intelligence={intelligence} dimensions={dimensions} />
+        <section className="surface-card border-primary/25 bg-primary-soft/50 p-6">
+          <h2 className="text-lg font-bold">Your Twin knows…</h2>
+          {knowledge.length === 0 ? (
+            <p className="mt-3 text-sm text-muted-foreground">
+              Nothing about you yet — it is matching on generic AI-industry signal only. Connect one
+              source below and this fills in immediately.
+            </p>
+          ) : (
+            <dl className="mt-4 space-y-3">
+              {knowledge.map((group) => (
+                <div key={group.key}>
+                  <dt className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                    {group.label}
+                  </dt>
+                  <dd className="mt-1.5 flex flex-wrap gap-1.5">
+                    {group.items.map((item) => (
+                      <Badge key={item} variant="outline" className="font-normal">
+                        {item}
+                      </Badge>
+                    ))}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          )}
+          <p className="mt-4 text-sm">
+            Reading {state.connectedSources.length + state.trainedSources.length} of{" "}
+            {importSources.length + trainingSources.length} available sources.
+          </p>
+        </section>
+      </div>
+
+      {gaps.length > 0 ? (
+        <section className="mt-8">
+          <h2 className="text-xl font-bold">Missing signal — and what it unlocks</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Ordered by how much each one improves your matches.
+          </p>
+          <ul className="mt-4 grid gap-3 sm:grid-cols-2">
+            {gaps.map((gap) => (
+              <li key={gap.id} className="surface-card p-4">
+                <p className="text-sm font-bold">{gap.missing}</p>
+                <p className="mt-1 text-sm text-muted-foreground">→ {gap.benefit}</p>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
 
       <input
         ref={fileInput}

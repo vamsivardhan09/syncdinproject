@@ -183,8 +183,14 @@ ${data.speaker === "peer" ? userBrief : peerBrief}`;
   if (!response.ok) return { text: fallback() };
 
   const json = (await response.json()) as { choices?: { message?: { content?: string } }[] };
-  const text = json.choices?.[0]?.message?.content?.trim();
-  if (!text || text.split(/\s+/).length < 4 || isRepetitive(text, previousForSpeaker)) {
+  const raw = json.choices?.[0]?.message?.content?.trim();
+  const text = raw ? cleanReply(raw) : "";
+  if (
+    !text ||
+    text.split(/\s+/).length < 4 ||
+    looksLikeLeak(text) ||
+    isRepetitive(text, previousForSpeaker)
+  ) {
     return { text: fallback() };
   }
   return { text };

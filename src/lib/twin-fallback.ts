@@ -44,15 +44,15 @@ export function fallbackTwinReply(opts: {
       ? `I'm ${me.name}, ${identity}, and my current focus is ${focus ?? "building useful professional relationships"}.`
       : `I'm ${me.name}, and I'm focused on ${focus ?? "building useful professional relationships"}.`;
     const relevance = sharedSkills.length
-      ? `Our Twins found a strong overlap around ${sharedSkills.slice(0, 2).join(" and ")}.`
+      ? `We both work on ${sharedSkills.slice(0, 2).join(" and ")}, which is exactly the part I'm pushing on right now.`
       : sharedInterests.length
-        ? `Our Twins found a shared interest in ${sharedInterests.slice(0, 2).join(" and ")}.`
+        ? `We seem to care about the same thing in ${sharedInterests.slice(0, 2).join(" and ")}.`
         : theirSkill
-          ? `Your work in ${theirSkill} looks closely related to what I'm exploring.`
-          : `Our Twins see enough professional alignment to make a direct introduction worthwhile.`;
+          ? `Your work in ${theirSkill} covers the side I don't own, which is why I'm reaching out.`
+          : `Your background looks complementary to mine, which is why I'm reaching out directly.`;
     const ask = sharedGoal
-      ? `I'm also working toward ${sharedGoal}; would you be open to comparing notes and seeing where we could help each other?`
-      : `Would you be open to a short conversation about what you're building and whether there is a useful way to collaborate?`;
+      ? `I'm working toward ${sharedGoal} too — what does that look like on your side, and where do you need help?`
+      : `What are you building at the moment, and which part would you rather hand to someone else?`;
     return `${introduction}\n${relevance} ${ask}`;
   }
 
@@ -61,8 +61,9 @@ export function fallbackTwinReply(opts: {
   if (/^(hi|hey|hello|yo)[!.\s]*$/.test(lowerLatest)) {
     const common = sharedSkills[0] ?? sharedInterests[0];
     return common
-      ? `Good to meet you, ${themFirst}. I noticed we both care about ${common}, and I’d be interested to hear what you’re building around it right now.`
-      : `Good to meet you, ${themFirst}. I’d like to understand what you’re focused on professionally right now and see whether it connects with my work in ${focus ?? "this space"}.`;
+      ? `${themFirst}, the reason I reached out is ${common} — I'm deep in that right now and curious how you're approaching it. What are you building around it?`
+      : `${themFirst}, my current focus is ${focus ?? "this space"}, and I'd like to know what you're working on so we can see whether the two sides fit together.`;
+
   }
   if (/\b(yes|sure|okay|ok|do it|sounds good|let'?s)\b/.test(lowerLatest)) {
     return sharedGoal

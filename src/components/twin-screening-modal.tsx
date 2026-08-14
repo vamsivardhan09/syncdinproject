@@ -114,7 +114,6 @@ export function TwinScreeningModal({
 
   const ready = Boolean(intro) && stage >= STAGES.length;
   const band = target ? collaborationBand(target.score) : null;
-  const inDirectory = person ? Boolean(personById(person.id)) : false;
 
   return (
     <AnimatePresence>
@@ -252,13 +251,11 @@ export function TwinScreeningModal({
                       "Connect"
                     )}
                   </Button>
-                  {inDirectory ? (
-                    <Button asChild variant="outline" className="flex-1">
-                      <Link to="/messages/$peer" params={{ peer: person.id }}>
-                        Open full chat
-                      </Link>
-                    </Button>
-                  ) : null}
+                  <Button asChild variant="outline" className="flex-1">
+                    <Link to="/messages/$peer" params={{ peer: person.id }}>
+                      Open full chat
+                    </Link>
+                  </Button>
                 </div>
               </motion.div>
             )}

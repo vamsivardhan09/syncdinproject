@@ -396,13 +396,7 @@ function Conversation() {
             </div>
           </header>
 
-            <div className="ml-auto flex items-center gap-2">
-              <Label htmlFor="autopilot" className="text-xs text-muted-foreground">
-                My Twin replies for me
-              </Label>
-              <Switch id="autopilot" checked={autopilot} onCheckedChange={setAutopilot} />
-            </div>
-          </header>
+
 
           <div className="flex-1 space-y-3 overflow-y-auto p-4">
             {loading ? (

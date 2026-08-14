@@ -31,6 +31,11 @@ const ReplyInput = z.object({
     location: z.string().default(""),
     intelligence: z.number().default(0),
     sources: z.array(z.string()).default([]),
+    bio: z.string().default(""),
+    skills: z.array(z.string()).default([]),
+    interests: z.array(z.string()).default([]),
+    goals: z.array(z.string()).default([]),
+    projects: z.array(z.string()).default([]),
   }),
   transcript: z
     .array(z.object({ sender: z.enum(["user", "peer"]), body: z.string() }))

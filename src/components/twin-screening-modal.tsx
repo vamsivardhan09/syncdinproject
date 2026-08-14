@@ -5,7 +5,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { Check, Handshake, Lightbulb, Loader2, MessageSquareQuote, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { photoFor, personById } from "@/lib/demo-data";
+import { photoFor } from "@/lib/demo-data";
 import { collaborationBand, type Attendee } from "@/lib/event-network";
 import { generateTwinReply } from "@/lib/twin-chat.functions";
 import { useTwin } from "@/lib/twin-store";

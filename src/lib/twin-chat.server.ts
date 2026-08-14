@@ -87,7 +87,9 @@ export async function handleTwinReply(data: TwinReplyInput) {
   ].join("\n");
 
   const mine = new Set(
-    [...u.skills, ...u.interests, ...u.goals, ...u.projects].map((item) => item.toLowerCase().trim()),
+    [...u.skills, ...u.interests, ...u.goals, ...u.projects].map((item) =>
+      item.toLowerCase().trim(),
+    ),
   );
   const overlap = [...person.skills, ...person.interests, ...person.goals, ...person.projects]
     .filter((item) => mine.has(item.toLowerCase().trim()))
@@ -100,7 +102,13 @@ export async function handleTwinReply(data: TwinReplyInput) {
     fallbackTwinReply({
       speaker: data.speaker,
       peer: person,
-      user: { name: u.name, role: u.headline, skills: u.skills, goals: u.goals, interests: u.interests },
+      user: {
+        name: u.name,
+        role: u.headline,
+        skills: u.skills,
+        goals: u.goals,
+        interests: u.interests,
+      },
       transcript: data.transcript,
     });
 
@@ -126,10 +134,9 @@ ${data.speaker === "peer" ? userBrief : peerBrief}`;
   const messages = [
     { role: "system", content: system },
     ...data.transcript.map((message) => ({
-      role:
-        (data.speaker === "peer" ? message.sender === "user" : message.sender === "peer")
-          ? "user"
-          : "assistant",
+      role: (data.speaker === "peer" ? message.sender === "user" : message.sender === "peer")
+        ? "user"
+        : "assistant",
       content: message.body,
     })),
   ];

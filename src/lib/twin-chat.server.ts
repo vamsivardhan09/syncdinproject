@@ -85,6 +85,23 @@ function cleanReply(text: string) {
   out = out.replace(/^[^A-Z"“'(]*(?=[A-Z"“'(])/u, "").trim();
   return out || text.trim();
 }
+/**
+ * A conversation has reached a useful outcome once a concrete next step is
+ * agreed. Automatic Twin replies stop there so the real person takes over.
+ */
+const OUTCOME_PATTERNS = [
+  /\b(let'?s|we'?ll|i'?ll) (set up|schedule|book|jump on|hop on|do) (a )?(call|chat|meeting|zoom|интро|intro)/i,
+  /\b(send|share) (you |me )?(a |the )?(calendar|invite|link|times|availability)/i,
+  /\bworks for me\b|\bsounds like a plan\b|\bdeal\b/i,
+  /\b(i can|you can) (own|take) (the )?[a-z/ ]{2,30}(layer|side|side of it)\b/i,
+  /\blet'?s (start|kick) (this |it )?off\b/i,
+  /\bhappy to (mentor|advise|refer|intro(duce)? you)\b/i,
+];
+
+function reachedOutcome(text: string, priorTurns: number) {
+  if (priorTurns < 3) return false;
+  return OUTCOME_PATTERNS.some((re) => re.test(text));
+}
 
 
 

@@ -444,7 +444,7 @@ function Conversation() {
                 >
                   <p
                     className={cn(
-                      "max-w-[85%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed",
+                      "max-w-[85%] whitespace-pre-line rounded-2xl px-4 py-2.5 text-sm leading-relaxed",
                        m.user_id === userId && m.sender === "user"
                         ? "bg-primary text-primary-foreground"
                         : "bg-muted text-foreground",

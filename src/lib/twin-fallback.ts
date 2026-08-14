@@ -25,9 +25,9 @@ export function fallbackTwinReply(opts: {
   speaker: "peer" | "user";
   peer: Side;
   user: Side;
-  turn: number;
+  transcript: { sender: "user" | "peer"; body: string }[];
 }): string {
-  const { speaker, peer, user, turn } = opts;
+  const { speaker, peer, user, transcript } = opts;
   const me = speaker === "peer" ? peer : user;
   const them = speaker === "peer" ? user : peer;
   const sharedSkills = overlap(me.skills, them.skills);
@@ -39,7 +39,7 @@ export function fallbackTwinReply(opts: {
   const identity = [me.role, me.company].filter(Boolean).join(" at ");
   const focus = me.skills?.slice(0, 2).join(" and ") || me.interests?.[0] || me.goals?.[0];
 
-  if (turn === 0) {
+  if (transcript.length === 0) {
     const introduction = identity
       ? `I'm ${me.name}, ${identity}, and my current focus is ${focus ?? "building useful professional relationships"}.`
       : `I'm ${me.name}, and I'm focused on ${focus ?? "building useful professional relationships"}.`;
@@ -56,26 +56,24 @@ export function fallbackTwinReply(opts: {
     return `${introduction}\n${relevance} ${ask}`;
   }
 
-  const opener = sharedSkills.length
-    ? `We both work on ${sharedSkills.slice(0, 2).join(" and ")} — what does that look like on your side right now?`
-    : sharedInterests.length
-      ? `${sharedInterests[0]} shows up on both our profiles. What's pulling you toward it at the moment?`
-      : theirSkill
-        ? `Your ${theirSkill.toLowerCase()} work is the closest thing to what ${me.role ? me.role.toLowerCase() : "I"} focus on. Where are you taking it next?`
-        : `${themFirst}, our Twins matched but the overlap isn't obvious yet — what are you focused on this month?`;
-
-  const lines = [
-    opener,
-    sharedGoal
-      ? `${sharedGoal} is on my list too — worth comparing notes properly?`
-      : theirSkill
-        ? `That lines up with the ${theirSkill.toLowerCase()} side of my work. Want to go deeper on it?`
-        : `That's relevant to what I'm doing. Want me to set up a proper intro?`,
-    me.skills?.length
-      ? `I can help on the ${me.skills[0]} side if it's useful — should I share what we've already shipped?`
-      : `Happy to go deeper whenever you are. Should I suggest a time?`,
-  ];
-
-  const response = lines[(turn - 1) % lines.length] ?? lines[0];
-  return `${response}\nIf the fit is real, I can turn this into a focused introduction between us.`;
+  const latest = transcript.at(-1)?.body.trim() ?? "";
+  const lowerLatest = latest.toLowerCase();
+  if (/^(hi|hey|hello|yo)[!.\s]*$/.test(lowerLatest)) {
+    const common = sharedSkills[0] ?? sharedInterests[0];
+    return common
+      ? `Good to meet you, ${themFirst}. I noticed we both care about ${common}, and I’d be interested to hear what you’re building around it right now.`
+      : `Good to meet you, ${themFirst}. I’d like to understand what you’re focused on professionally right now and see whether it connects with my work in ${focus ?? "this space"}.`;
+  }
+  if (/\b(yes|sure|okay|ok|do it|sounds good|let'?s)\b/.test(lowerLatest)) {
+    return sharedGoal
+      ? `Great—let’s make it concrete. Since ${sharedGoal} matters to both of us, I’d start by comparing what each of us is working toward and where our experience could complement it.`
+      : `Great—let’s make it concrete. Share the main problem you’re working on right now, and I’ll respond with the most relevant part of my background.`;
+  }
+  if (latest.includes("?")) {
+    const detail = focus ?? me.goals?.[0] ?? "finding useful professional collaborations";
+    return `From my side, the clearest answer is ${detail}. ${theirSkill ? `Your background in ${theirSkill} could add a useful perspective—how are you applying it today?` : "What part of that is most relevant to you?"}`;
+  }
+  return sharedSkills.length
+    ? `That gives me a clearer picture. The strongest connection I see is ${sharedSkills[0]}, so I’d like to compare how each of us approaches it in practice.`
+    : `That helps me understand where you’re coming from. The next useful step is to compare your current priority with my work in ${focus ?? "this area"} and see if there’s a practical fit.`;
 }

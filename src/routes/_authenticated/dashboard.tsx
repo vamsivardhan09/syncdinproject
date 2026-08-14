@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { NetworkGraph } from "@/components/network-graph";
+import { WelcomeTwinModal } from "@/components/welcome-twin-modal";
 import { WhileYouWereAway } from "@/components/while-you-were-away";
 import { TwinMeter } from "@/components/twin-intelligence";
 import { RecommendationCard } from "@/components/recommendation-card";
@@ -133,6 +134,7 @@ function Dashboard() {
 
   return (
     <AppShell>
+      <WelcomeTwinModal />
       <motion.header
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}

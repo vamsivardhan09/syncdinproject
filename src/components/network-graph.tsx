@@ -353,6 +353,29 @@ export function NetworkGraph() {
           </motion.div>
         ) : null}
       </div>
+
+      <div className="flex flex-wrap items-center gap-3 border-t border-border p-5">
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold">
+            {connectedCount === 0
+              ? "Your ring fills up as your Twin learns you"
+              : "Sharper signal, closer ring"}
+          </p>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            Right now your Twin is matching on {intelligence}% of your story. Add one more source
+            and the people on this canvas change — closer roles, closer goals, fewer strangers.
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <Button asChild size="sm">
+            <Link to="/twin">Improve my matches</Link>
+          </Button>
+          <Button asChild size="sm" variant="outline">
+            <Link to="/network">Browse people</Link>
+          </Button>
+        </div>
+      </div>
     </section>
+
   );
 }

@@ -84,6 +84,11 @@ function Conversation() {
     full_name: string | null;
     headline: string | null;
     location: string | null;
+    avatar_url?: string | null;
+    twin_summary?: string | null;
+    skills?: string[] | null;
+    interests?: string[] | null;
+    goals?: string[] | null;
   } | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [draft, setDraft] = useState("");
@@ -100,6 +105,7 @@ function Conversation() {
     [state.connectedSources, state.trainedSources],
   );
 
+  // The user's Twin speaks from their real stored signals — never invented ones.
   const userContext = useMemo(
     () => ({
       name: profile?.full_name ?? "the user",
@@ -107,6 +113,11 @@ function Conversation() {
       location: profile?.location ?? "",
       intelligence,
       sources: sourceNames,
+      bio: profile?.twin_summary ?? "",
+      skills: profile?.skills ?? [],
+      interests: profile?.interests ?? [],
+      goals: profile?.goals ?? [],
+      projects: [],
     }),
     [profile, intelligence, sourceNames],
   );
@@ -142,7 +153,7 @@ function Conversation() {
       if (!uid) return;
       const { data } = await supabase
         .from("profiles")
-        .select("full_name, headline, location")
+        .select("full_name, headline, location, avatar_url, twin_summary, skills, interests, goals")
         .eq("id", uid)
         .maybeSingle();
       setProfile(data ?? null);
@@ -351,7 +362,7 @@ function Conversation() {
             </Link>
           </Button>
           <img
-            src={realProfile?.avatar_url || photoFor(person.id)}
+            src={realProfile?.avatar_url || photoFor(person.id, person.name)}
             alt={person.name}
             className="size-11 shrink-0 rounded-full object-cover"
           />

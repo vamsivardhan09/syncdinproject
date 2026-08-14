@@ -31,6 +31,11 @@ const ReplyInput = z.object({
     location: z.string().default(""),
     intelligence: z.number().default(0),
     sources: z.array(z.string()).default([]),
+    bio: z.string().default(""),
+    skills: z.array(z.string()).default([]),
+    interests: z.array(z.string()).default([]),
+    goals: z.array(z.string()).default([]),
+    projects: z.array(z.string()).default([]),
   }),
   transcript: z
     .array(z.object({ sender: z.enum(["user", "peer"]), body: z.string() }))
@@ -65,9 +70,21 @@ export const generateTwinReply = createServerFn({ method: "POST" })
       `Name: ${u.name || "the user"}`,
       u.headline ? `Headline: ${u.headline}` : "Headline: not provided",
       u.location ? `Location: ${u.location}` : "Location: not provided",
+      u.bio ? `Background: ${u.bio}` : "Background: not provided",
+      u.skills.length ? `Skills: ${u.skills.join(", ")}` : "Skills: not provided",
+      u.interests.length ? `Interests: ${u.interests.join(", ")}` : "Interests: not provided",
+      u.goals.length ? `Goals: ${u.goals.join(", ")}` : "Goals: not provided",
+      u.projects.length ? `Projects: ${u.projects.join(", ")}` : "Projects: not provided",
       `Twin intelligence: ${u.intelligence}%`,
       u.sources.length ? `Trained on: ${u.sources.join(", ")}` : "Trained on: no sources yet",
     ].join("\n");
+
+    /** Facts both sides actually share — the conversation must start from these. */
+    const lower = (xs: string[]) => xs.map((x) => x.toLowerCase().trim());
+    const mine = new Set(lower([...u.skills, ...u.interests, ...u.goals, ...u.projects]));
+    const overlap = [...person.skills, ...person.interests, ...person.goals, ...person.projects]
+      .filter((x) => mine.has(x.toLowerCase().trim()))
+      .slice(0, 3);
 
     const fallback = () =>
       fallbackTwinReply({
@@ -83,8 +100,9 @@ export const generateTwinReply = createServerFn({ method: "POST" })
         user: {
           name: u.name,
           role: u.headline,
-          skills: [],
-          goals: [],
+          skills: u.skills,
+          goals: u.goals,
+          interests: u.interests,
         },
         turn: data.transcript.length,
       });
@@ -92,12 +110,18 @@ export const generateTwinReply = createServerFn({ method: "POST" })
     if (!key) return { text: fallback() };
 
     const tone =
-      "Write like a real person texting, not an assistant. Exactly 1-2 short sentences, under 30 words total. No markdown, no bullet points, no greetings after the first message.";
+      "Write like one professional messaging another: 1-3 short lines, under 35 words total. No markdown, no bullet points, no emoji. Never open with a bare greeting like \"Hi\" or \"Hello\" — open with the substance. Never restate the other person's name as a whole message.";
+
+    const overlapLine = overlap.length
+      ? `STRONGEST REAL OVERLAP (build the conversation from these, most specific first): ${overlap.join(", ")}.`
+      : "There is no explicit overlap in the data — find the closest adjacent point between the two profiles and be honest that you're probing for it.";
+
+    const rules = `Rules: use ONLY facts listed in the two profiles; never invent skills, employers, projects, numbers or goals. Reference at least one concrete shared or complementary fact in every message. Ask exactly one useful question that moves toward a real reason to connect, or propose a concrete next step once the reason is clear. Do not repeat a point already made in the transcript.`;
 
     const system =
       data.speaker === "peer"
-        ? `You are ${person.name}'s AI Twin on SyncdIn — an AI that networks on their behalf. Speak as ${person.name} in first person, warm, direct, professional. Use only the profile facts below; never invent employers or numbers. Reference the other person's context when it helps. Ask one useful question. 1-3 short sentences, no greetings after the first message, no emoji spam, no markdown.\n\n${tone}\n\nYOUR PROFILE:\n${peerBrief}\n\nTHE PERSON YOU ARE TALKING TO:\n${userBrief}`
-        : `You are the AI Twin of ${u.name || "the user"} on SyncdIn, networking on their behalf. Speak as them in first person, confident and concise. Use only the facts below; if something is unknown, keep it general instead of inventing it. Move the conversation toward a concrete next step. 1-3 short sentences, no markdown.\n\n${tone}\n\nYOUR PROFILE:\n${userBrief}\n\nTHE PERSON YOU ARE TALKING TO:\n${peerBrief}`;
+        ? `You are ${person.name}'s AI Twin on SyncdIn, networking on their behalf. Speak as ${person.name} in first person: warm, direct, professional.\n\n${rules}\n\n${overlapLine}\n\n${tone}\n\nYOUR PROFILE:\n${peerBrief}\n\nTHE PERSON YOU ARE TALKING TO:\n${userBrief}`
+        : `You are the AI Twin of ${u.name || "the user"} on SyncdIn, networking on their behalf. Speak as them in first person: confident and concise.\n\n${rules}\n\n${overlapLine}\n\n${tone}\n\nYOUR PROFILE:\n${userBrief}\n\nTHE PERSON YOU ARE TALKING TO:\n${peerBrief}`;
 
     const messages = [
       { role: "system", content: system },

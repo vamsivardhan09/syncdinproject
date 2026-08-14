@@ -30,19 +30,29 @@ export function fallbackTwinReply(opts: {
   const { speaker, peer, user, turn } = opts;
   const me = speaker === "peer" ? peer : user;
   const them = speaker === "peer" ? user : peer;
-  const shared = overlap(me.skills, them.skills);
-  const sharedGoal = them.goals?.[0] ?? me.goals?.[0];
+  const sharedSkills = overlap(me.skills, them.skills);
+  const sharedInterests = overlap(me.interests, them.interests);
+  const sharedGoal = overlap(me.goals, them.goals)[0] ?? them.goals?.[0];
   const themFirst = first(them.name || "there");
+  const theirSkill = them.skills?.[0];
+
+  const opener = sharedSkills.length
+    ? `We both work on ${sharedSkills.slice(0, 2).join(" and ")} — what does that look like on your side right now?`
+    : sharedInterests.length
+      ? `${sharedInterests[0]} shows up on both our profiles. What's pulling you toward it at the moment?`
+      : theirSkill
+        ? `Your ${theirSkill.toLowerCase()} work is the closest thing to what ${me.role ? me.role.toLowerCase() : "I"} focus on. Where are you taking it next?`
+        : `${themFirst}, our Twins matched but the overlap isn't obvious yet — what are you focused on this month?`;
 
   const lines = [
-    shared.length
-      ? `Hey ${themFirst} — we both work with ${shared.slice(0, 2).join(" and ")}. What are you building with it right now?`
-      : `Hey ${themFirst} — ${me.role ? `I'm on ${me.role.toLowerCase()} work` : "good to connect"}${me.company ? ` at ${me.company}` : ""}. What are you focused on this month?`,
+    opener,
     sharedGoal
-      ? `That's relevant — ${sharedGoal.toLowerCase()} is on my list too. Want to compare notes properly?`
-      : `That sounds relevant to what I'm doing. Want me to set up a proper intro?`,
+      ? `${sharedGoal} is on my list too — worth comparing notes properly?`
+      : theirSkill
+        ? `That lines up with the ${theirSkill.toLowerCase()} side of my work. Want to go deeper on it?`
+        : `That's relevant to what I'm doing. Want me to set up a proper intro?`,
     me.skills?.length
-      ? `I can help on the ${me.skills[0]} side if that's useful. Shall I share what we've already shipped?`
+      ? `I can help on the ${me.skills[0]} side if it's useful — should I share what we've already shipped?`
       : `Happy to go deeper whenever you are. Should I suggest a time?`,
   ];
 

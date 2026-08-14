@@ -71,7 +71,7 @@ function Network() {
       <header>
         <h1 className="text-3xl font-extrabold sm:text-4xl">Your network</h1>
         <p className="mt-2 text-muted-foreground">
-          Real SyncdIn members first, then demo matches sorted by fit. Every card shows why it made
+          People your Twin thinks are worth your time, sorted by fit. Every card shows why it made
           the cut.
         </p>
       </header>
@@ -85,7 +85,7 @@ function Network() {
       </div>
 
       <div className="mt-10 flex flex-col gap-4">
-        <h2 className="text-lg font-bold">Demo matches your Twin approved</h2>
+        <h2 className="text-lg font-bold">More people your Twin approved</h2>
 
         <div className="relative max-w-md">
           <Search

@@ -112,7 +112,7 @@ function Inbox() {
                 className="focus-ring flex items-center gap-3 p-4 transition-colors hover:bg-muted/70"
               >
                 <img
-                  src={photoFor(p.id)}
+                  src={photoFor(p.id, p.name)}
                   alt=""
                   loading="lazy"
                   className="size-12 shrink-0 rounded-full object-cover"

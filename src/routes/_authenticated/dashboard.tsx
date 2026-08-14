@@ -65,7 +65,7 @@ function demoStats() {
   return [
     {
       id: "recruiters",
-      label: "Recruiters in your demo network",
+      label: "Recruiters in your network",
       value: count(["Recruiter"]),
       icon: Briefcase,
       tone: "text-info",

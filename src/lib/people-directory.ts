@@ -76,7 +76,7 @@ export function personFromProfile(p: {
     complementarySkills: skills.slice(0, 3),
     suggestedCollaboration: "Compare what you're each working on and find the overlap.",
     conversationStarter: `Hi ${first} — our Twins matched. What are you working on right now?`,
-    reasons: ["Real SyncdIn member", ...(skills.length ? [`Works with ${skills.slice(0, 3).join(", ")}`] : [])],
+    reasons: ["Active on SyncdIn", ...(skills.length ? [`Works with ${skills.slice(0, 3).join(", ")}`] : [])],
     accent: "violet",
   };
 }

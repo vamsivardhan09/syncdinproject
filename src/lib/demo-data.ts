@@ -377,12 +377,29 @@ export const twinDimensions = [
   { key: "networking", label: "Networking", base: 14 },
 ] as const;
 
+const UUID_SHAPE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Neutral initials placeholder for a real account that hasn't uploaded a photo. */
+export function neutralAvatar(name?: string | null) {
+  const initials = (name ?? "")
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? "")
+    .join("");
+  const label = initials || "·";
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96"><rect width="96" height="96" rx="48" fill="#ece9fb"/><text x="48" y="59" font-family="system-ui,sans-serif" font-size="34" font-weight="700" fill="#6d4aff" text-anchor="middle">${label}</text></svg>`;
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+}
+
 /**
  * Deterministic professional headshot for seeded network identities.
- * Stable per id (same person always gets the same photo) and served from a
- * reliable static host. Swap for a real storage URL when profiles go live.
+ * Stable per id (same person always gets the same photo). Real accounts (UUID
+ * ids) never borrow someone else's face: they get a neutral placeholder until
+ * they upload their own photo.
  */
-export function photoFor(id: string) {
+export function photoFor(id: string, name?: string | null) {
+  if (UUID_SHAPE.test(id.trim())) return neutralAvatar(name);
   let hash = 0;
   for (let i = 0; i < id.length; i += 1) hash = (hash * 31 + id.charCodeAt(i)) % 100000;
   const gender = hash % 2 === 0 ? "men" : "women";

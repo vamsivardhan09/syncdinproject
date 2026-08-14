@@ -109,8 +109,10 @@ export const generateTwinReply = createServerFn({ method: "POST" })
 
     if (!key) return { text: fallback() };
 
-    const tone =
-      "Write like one professional messaging another: 1-3 short lines, under 35 words total. No markdown, no bullet points, no emoji. Never open with a bare greeting like \"Hi\" or \"Hello\" — open with the substance. Never restate the other person's name as a whole message.";
+    const isOpening = data.transcript.length === 0;
+    const tone = isOpening
+      ? "Write a substantive cold introduction in 2-3 short sentences (35-65 words total). Introduce who you represent and their professional focus, explain one evidence-based reason the two people should talk, and end with one specific low-pressure question. No markdown, bullets, emoji, or generic greeting."
+      : "Write like one professional representative replying to another in 2-3 short sentences (25-50 words total). Advance the conversation with concrete profile evidence and exactly one useful question or next step. No markdown, bullets, emoji, or generic greeting.";
 
     const overlapLine = overlap.length
       ? `STRONGEST REAL OVERLAP (build the conversation from these, most specific first): ${overlap.join(", ")}.`
@@ -147,6 +149,8 @@ export const generateTwinReply = createServerFn({ method: "POST" })
       choices?: { message?: { content?: string } }[];
     };
     const text = json.choices?.[0]?.message?.content?.trim();
-    if (!text) return { text: fallback() };
+    // Very short gateway answers (for example “Hi”) break the core product
+    // promise. A contextual deterministic introduction is safer than filler.
+    if (!text || text.split(/\s+/).length < 12) return { text: fallback() };
     return { text };
   });

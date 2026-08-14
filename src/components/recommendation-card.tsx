@@ -134,26 +134,18 @@ export function RecommendationCard({
             View profile
           </Link>
         </Button>
+        <Button asChild className="flex-1">
+          <Link to="/messages/$peer" params={{ peer: person.id }}>
+            <MessageSquareQuote aria-hidden="true" className="size-4" /> Talk with Twin
+          </Link>
+        </Button>
         <Button
           onClick={onConnect}
-          variant={connected ? "secondary" : "default"}
+          variant={connected ? "secondary" : "outline"}
           className="flex-1"
           aria-pressed={connected}
         >
-          {connected ? (
-            <>
-              <Check aria-hidden="true" className="size-4" /> Twins talking
-            </>
-          ) : (
-            <>
-              Let our Twins talk
-            </>
-          )}
-        </Button>
-        <Button asChild variant="outline" className="flex-1">
-          <Link to="/messages/$peer" params={{ peer: person.id }}>
-            <MessageSquareQuote aria-hidden="true" className="size-4" /> Message
-          </Link>
+          {connected ? <><Check aria-hidden="true" className="size-4" /> Connected</> : "Connect"}
         </Button>
         <Button
           variant="outline"

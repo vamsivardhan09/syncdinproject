@@ -267,14 +267,10 @@ function Dashboard() {
                           <MessageCircle aria-hidden="true" className="size-4" /> Start conversation
                         </Link>
                       </Button>
-                      <Button
-                        variant="outline"
-                        onClick={() => toggleConnection(person.id)}
-                        aria-pressed={state.connectionsMade.includes(person.id)}
-                      >
-                        {state.connectionsMade.includes(person.id)
-                          ? "Twins talking"
-                          : "Let our Twins talk"}
+                      <Button asChild variant="outline">
+                        <Link to="/messages/$peer" params={{ peer: person.id }}>
+                          Let our Twins talk
+                        </Link>
                       </Button>
                     </div>
                   </motion.li>

@@ -70,7 +70,7 @@ type Message = {
 
 function Conversation() {
   const { peer } = Route.useParams();
-  const { state, intelligence, toggleConnection } = useTwin();
+  const { state, intelligence, connect } = useTwin();
   const demoPerson = resolvePerson(peer);
   const [realProfile, setRealProfile] = useState<PublicProfile | null>(null);
   const [realPerson, setRealPerson] = useState<DemoPerson | null>(null);
@@ -191,7 +191,7 @@ function Conversation() {
 
   const persist = useCallback(
     async (sender: "user" | "peer", body: string) => {
-      if (!userId) return;
+      if (!userId) return false;
       const { data, error } = await supabase
         .from("messages")
         .insert({
@@ -205,7 +205,7 @@ function Conversation() {
         .single();
       if (error) {
         toast.error("Could not save that message.");
-        return;
+        return false;
       }
       if (data) setMessages((prev) => [...prev, data]);
       // Email the human recipient only — never the sender, and at most once
@@ -221,6 +221,7 @@ function Conversation() {
           },
         }).catch(() => undefined);
       }
+      return true;
     },
     [userId, peer],
   );
@@ -262,8 +263,8 @@ function Conversation() {
             transcript: transcript.slice(-20),
           },
         });
-        await persist(speaker, text);
-        return text;
+        const saved = await persist(speaker, text);
+        return saved ? text : null;
       } catch (err) {
         toast.error(err instanceof Error ? err.message : "The Twin could not reply.");
         return null;
@@ -277,10 +278,17 @@ function Conversation() {
   const transcriptOf = useCallback(
     (rows: Message[]): { sender: "user" | "peer"; body: string }[] =>
       rows.map((m) => ({
-        sender: m.sender === "user" ? ("user" as const) : ("peer" as const),
+        sender:
+          m.user_id === userId
+            ? m.sender === "user"
+              ? ("user" as const)
+              : ("peer" as const)
+            : m.sender === "user"
+              ? ("peer" as const)
+              : ("user" as const),
         body: m.body,
       })),
-    [],
+    [userId],
   );
 
   async function send(e: React.FormEvent) {
@@ -288,8 +296,12 @@ function Conversation() {
     const body = draft.trim();
     if (!body || !userId || thinking) return;
     setDraft("");
-    await persist("user", body);
-    if (!state.connectionsMade.includes(peer)) void toggleConnection(peer);
+    const saved = await persist("user", body);
+    if (!saved) {
+      setDraft(body);
+      return;
+    }
+    if (!isRealUserId(peer) && !state.connectionsMade.includes(peer)) void connect(peer);
     const base = [...transcriptOf(messages), { sender: "user" as const, body }];
     const reply = await twinTurn("peer", base);
     if (reply && autopilot) {
@@ -301,7 +313,7 @@ function Conversation() {
     if (!userId || thinking) return;
     // Opening the Twin-to-Twin conversation is also a real connection.
     if (!state.connectionsMade.includes(peer)) {
-      const result = await toggleConnection(peer);
+      const result = await connect(peer);
       if (!result.ok) return;
     }
     const base = transcriptOf(messages);
@@ -416,8 +428,8 @@ function Conversation() {
               </p>
             ) : messages.length === 0 ? (
               <div className="rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">
-                No messages yet. Say hi — {person.name.split(" ")[0]}&apos;s AI Twin will reply using
-                their profile, and yours can answer using your data.
+                No messages yet. Start the Twin conversation to send a professional introduction
+                based on your profile, then let {person.name.split(" ")[0]}&apos;s Twin respond from theirs.
               </div>
             ) : (
               messages.map((m) => (
@@ -470,7 +482,7 @@ function Conversation() {
                 onClick={() => void letTwinsTalk()}
                 disabled={thinking !== null}
               >
-                Let our Twins talk
+                Start Twin conversation
               </Button>
             </div>
 

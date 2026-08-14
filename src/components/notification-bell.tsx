@@ -156,9 +156,16 @@ export function NotificationBell() {
                   <span className="flex items-start gap-2.5">
                     {actor ? <ActorAvatar actor={actor} /> : <KindIcon kind={row.kind} read={row.read} />}
                     <span className="min-w-0">
-                      <span className="block font-semibold">{row.title}</span>
+                       <span className="block font-semibold">
+                         {actor ? displayName(actor) : row.title}
+                       </span>
+                       {actor?.headline ? (
+                         <span className="block truncate text-xs text-muted-foreground">
+                           {actor.headline}
+                         </span>
+                       ) : null}
                       {row.body ? (
-                        <span className="block text-xs text-muted-foreground">{row.body}</span>
+                         <span className="mt-0.5 block text-xs text-muted-foreground">{row.body}</span>
                       ) : null}
                       <span className="mt-0.5 block text-[11px] text-muted-foreground">
                         {timeAgo(row.created_at)}

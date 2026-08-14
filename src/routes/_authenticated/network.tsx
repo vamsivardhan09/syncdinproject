@@ -85,7 +85,7 @@ function Network() {
       </div>
 
       <div className="mt-10 flex flex-col gap-4">
-        <h2 className="text-lg font-bold">Demo matches your Twin approved</h2>
+        <h2 className="text-lg font-bold">More people your Twin approved</h2>
 
         <div className="relative max-w-md">
           <Search

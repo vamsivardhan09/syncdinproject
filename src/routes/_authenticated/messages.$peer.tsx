@@ -249,7 +249,7 @@ function Conversation() {
     async (speaker: "peer" | "user", transcript: { sender: "user" | "peer"; body: string }[]) => {
       setThinking(speaker);
       try {
-        const { text } = await runTwin({
+        const { text, outcome } = await runTwin({
           data: {
             speaker,
             peerId: peer,
@@ -259,7 +259,14 @@ function Conversation() {
           },
         });
         const saved = await persist(speaker, text);
-        return saved ? text : null;
+        if (!saved) return null;
+        // A concrete next step was agreed — hand the conversation back to the human.
+        if (outcome) {
+          setAutopilot(false);
+          toast.success("Your Twins agreed on a next step — take it from here.");
+          return null;
+        }
+        return text;
       } catch (err) {
         toast.error(err instanceof Error ? err.message : "The Twin could not reply.");
         return null;
@@ -269,6 +276,7 @@ function Conversation() {
     },
     [runTwin, peer, peerProfile, userContext, persist],
   );
+
 
   const transcriptOf = useCallback(
     (rows: Message[]): { sender: "user" | "peer"; body: string }[] =>

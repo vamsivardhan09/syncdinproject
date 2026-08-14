@@ -143,18 +143,20 @@ export async function handleTwinReply(data: TwinReplyInput) {
     });
 
   const key = process.env["LOVABLE_API_KEY"];
-  if (!key) return { text: fallback() };
+  if (!key) return { text: fallback(), outcome: false };
 
   const isOpening = data.transcript.length === 0;
   const voice = isOpening
-    ? "Write a natural cold introduction in 2–3 short sentences. Say who you represent, mention one specific reason to talk, and end with one easy question."
-    : `Reply directly to the latest message: “${latest}”. First acknowledge or answer what was said, then add one useful thought. Ask a question only when it naturally moves the conversation forward.`;
-  const system = `You are ${data.speaker === "peer" ? person.name : u.name || "the user"}'s AI Twin, speaking in first person as their professional representative.
+    ? "Open the conversation: say concretely what you are working on right now, name the specific overlap or complementary strength you see in their work, and ask one direct question about their side of it."
+    : `Respond to the latest message: “${latest}”. Answer what was actually said, add one concrete detail from your own work, and push the conversation one step closer to a real outcome (collaboration, mentorship, hiring, intro, or a call).`;
+  const system = `You are ${data.speaker === "peer" ? person.name : u.name || "the user"}, writing your own direct messages in first person.
 
-Sound like a thoughtful human in a real direct-message conversation—not a pitch bot. Keep the reply to 1–3 short sentences and under 65 words. Vary sentence structure and tone. Never repeat a previous sentence, repeatedly announce that the Twins matched, or keep offering a “focused introduction.” Do not force profile facts into every reply. Use profile evidence when relevant, but never invent facts. No markdown, bullets, labels, or generic greeting.
+Write like a real professional exploring whether a connection is worth it. 2–5 natural sentences. Be specific about work: what you build, the stack or domain, the problem you are solving. Use only facts present in the profiles below — never invent employers, projects, numbers, or history. Never open with a bare greeting like "Hi <name>", never mention Twins, matching, compatibility scores, or "our AIs connected". Do not repeat any point you already made. No markdown, bullets, or labels.
 
-${overlap.length ? `Known overlap: ${overlap.join(", ")}.` : "No exact overlap is confirmed; explore adjacent interests without claiming a match."}
+${overlap.length ? `Genuine overlap you may reference: ${overlap.join(", ")}.` : "There is no confirmed overlap; look for complementary strengths instead of claiming a match."}
 ${voice}
+
+When a concrete next step has been agreed (a call, an intro, splitting work, an interview, a follow-up), confirm it in one clear sentence and stop proposing new ideas.
 
 YOUR PROFILE:
 ${data.speaker === "peer" ? peerBrief : userBrief}
@@ -177,22 +179,24 @@ ${data.speaker === "peer" ? userBrief : peerBrief}`;
     body: JSON.stringify({
       model: "google/gemini-3.6-flash",
       messages,
-      max_tokens: 180,
+      max_tokens: 420,
       temperature: 0.85,
     }),
   });
-  if (!response.ok) return { text: fallback() };
+  if (!response.ok) return { text: fallback(), outcome: false };
 
   const json = (await response.json()) as { choices?: { message?: { content?: string } }[] };
   const raw = json.choices?.[0]?.message?.content?.trim();
   const text = raw ? cleanReply(raw) : "";
   if (
     !text ||
-    text.split(/\s+/).length < 4 ||
+    text.split(/\s+/).length < 8 ||
     looksLikeLeak(text) ||
     isRepetitive(text, previousForSpeaker)
   ) {
-    return { text: fallback() };
+    const fb = fallback();
+    return { text: fb, outcome: reachedOutcome(fb, data.transcript.length) };
   }
-  return { text };
+  return { text, outcome: reachedOutcome(text, data.transcript.length) };
 }
+

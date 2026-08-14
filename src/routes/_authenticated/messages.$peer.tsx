@@ -11,8 +11,14 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
-import { importSources, photoFor, trainingSources, type DemoPerson } from "@/lib/demo-data";
-import { personFromProfile, resolvePerson } from "@/lib/people-directory";
+import {
+  demoPeople,
+  importSources,
+  photoFor,
+  trainingSources,
+  type DemoPerson,
+} from "@/lib/demo-data";
+import { personFromProfile, resolvePeople, resolvePerson } from "@/lib/people-directory";
 import { getPublicProfile, isRealUserId, type PublicProfile } from "@/lib/real-people";
 
 import { sendRelationshipEmail } from "@/lib/relationship-email.functions";
@@ -65,6 +71,14 @@ type Message = {
   created_at: string;
 };
 
+type ThreadItem = {
+  person: DemoPerson;
+  avatar: string | null;
+  preview: string | null;
+  at: string | null;
+  unread: boolean;
+};
+
 function Conversation() {
   const { peer } = Route.useParams();
   const { state, intelligence, connect } = useTwin();
@@ -93,6 +107,9 @@ function Conversation() {
   const [thinking, setThinking] = useState<null | "peer" | "user">(null);
   const [autopilot, setAutopilot] = useState(true);
   const endRef = useRef<HTMLDivElement>(null);
+
+  // Left-sidebar: recent connections & conversations.
+  const [threads, setThreads] = useState<ThreadItem[]>([]);
 
   const sourceNames = useMemo(
     () =>
@@ -180,6 +197,73 @@ function Conversation() {
       cancelled = true;
     };
   }, [userId, peer]);
+
+  // Build the conversation list for the left sidebar: every thread the user
+  // has messaged plus their persisted connections, newest activity first.
+  useEffect(() => {
+    if (!userId) return;
+    let cancelled = false;
+    void (async () => {
+      const { data } = await supabase
+        .from("messages")
+        .select("user_id, recipient_id, peer_slug, sender, body, created_at")
+        .order("created_at", { ascending: true });
+      if (cancelled || !data) return;
+
+      const previews = new Map<string, { body: string; at: string; unread: boolean }>();
+      const peerIds = new Set<string>();
+      for (const row of data) {
+        const threadId: string =
+          row.user_id === userId ? (row.recipient_id ?? row.peer_slug) : row.user_id;
+        const fromPeer = row.user_id !== userId;
+        previews.set(threadId, {
+          body: row.body,
+          at: row.created_at,
+          unread: fromPeer,
+        });
+        if (isRealUserId(threadId) && threadId !== userId) peerIds.add(threadId);
+      }
+
+      const profiles = await Promise.all(Array.from(peerIds).map((id) => getPublicProfile(id)));
+      if (cancelled) return;
+      const realThreads = profiles
+        .filter((p): p is PublicProfile => p !== null)
+        .map((p) => ({ person: personFromProfile(p), avatar: p.avatar_url }));
+
+      const byId = new Map<string, { person: DemoPerson; avatar: string | null }>();
+      for (const { person: p, avatar } of realThreads) byId.set(p.id, { person: p, avatar });
+      for (const p of resolvePeople(state.connectionsMade)) {
+        if (!byId.has(p.id)) byId.set(p.id, { person: p, avatar: null });
+      }
+
+      // Fall back to a few demo people so a brand-new user still sees options.
+      if (byId.size === 0) {
+        for (const p of demoPeople.slice(0, 5)) byId.set(p.id, { person: p, avatar: null });
+      }
+
+      const items: ThreadItem[] = Array.from(byId.values()).map(({ person: p, avatar }) => {
+        const prev = previews.get(p.id);
+        return {
+          person: p,
+          avatar,
+          preview: prev?.body ?? null,
+          at: prev?.at ?? null,
+          unread: prev?.unread ?? false,
+        };
+      });
+      // Most recent activity first; untouched threads last, stable by match.
+      items.sort((a, b) => {
+        if (a.at && b.at) return b.at.localeCompare(a.at);
+        if (a.at) return -1;
+        if (b.at) return 1;
+        return b.person.match - a.person.match;
+      });
+      setThreads(items);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [userId, state.connectionsMade]);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
@@ -277,7 +361,6 @@ function Conversation() {
     [runTwin, peer, peerProfile, userContext, persist],
   );
 
-
   const transcriptOf = useCallback(
     (rows: Message[]): { sender: "user" | "peer"; body: string }[] =>
       rows.map((m) => ({
@@ -330,6 +413,7 @@ function Conversation() {
     const next = last.sender === "user" ? "peer" : "user";
     await twinTurn(next, base);
   }
+
   if (!person) {
     return (
       <AppShell>
@@ -349,7 +433,7 @@ function Conversation() {
               <>
                 <h1 className="text-xl font-extrabold">Conversation unavailable</h1>
                 <p className="mt-2 text-sm text-muted-foreground">
-                  This member is no longer discoverable, so their Twin can&apos;t talk right now.
+                  This member is no longer discoverable, so their Twin can't talk right now.
                 </p>
                 <Button asChild className="mt-5">
                   <Link to="/network">Find people to meet</Link>
@@ -367,145 +451,225 @@ function Conversation() {
 
   return (
     <AppShell>
-      <div className="mx-auto flex h-[calc(100dvh-8.5rem)] w-full max-w-4xl flex-col">
-        {/* Compact conversation header — who you're talking to. */}
-        <header className="surface-card flex items-center gap-3 p-3">
-          <Button asChild variant="ghost" size="icon" className="shrink-0">
-            <Link to="/messages" aria-label="All conversations">
-              <ArrowLeft aria-hidden="true" className="size-4" />
-            </Link>
-          </Button>
-          <img
-            src={realProfile?.avatar_url || photoFor(person.id, person.name)}
-            alt={person.name}
-            className="size-11 shrink-0 rounded-full object-cover"
-          />
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2">
-              <h1 className="truncate text-base font-extrabold sm:text-lg">{person.name}</h1>
-              <Badge
-                variant="secondary"
-                className="bg-primary-soft font-mono text-[0.65rem] text-primary"
-              >
-                {person.match}%
-              </Badge>
-            </div>
-            <p className="truncate text-xs text-muted-foreground">
-              {person.role} · {person.company}
-              <span className="hidden sm:inline">
-                {" "}
-                · <MapPin aria-hidden="true" className="inline size-3" /> {person.location}
-              </span>
+      <div className="mx-auto flex h-[calc(100dvh-8.5rem)] w-full max-w-6xl gap-2">
+        {/* Left sidebar — recent connections & conversations */}
+        <aside className="surface-card hidden w-64 shrink-0 flex-col overflow-hidden md:flex">
+          <div className="flex items-center justify-between px-3 py-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Conversations
             </p>
+            <Badge variant="secondary" className="bg-primary-soft font-mono text-[0.6rem] text-primary">
+              {threads.length}
+            </Badge>
           </div>
-          <div className="hidden shrink-0 items-center gap-2 sm:flex">
-            <Label htmlFor="autopilot" className="text-xs text-muted-foreground">
-              My Twin replies
-            </Label>
-            <Switch id="autopilot" checked={autopilot} onCheckedChange={setAutopilot} />
-          </div>
-        </header>
+          <ul className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto px-1.5 pb-2">
+            {threads.map((t) => {
+              const active = peer === t.person.id;
+              return (
+                <li key={t.person.id}>
+                  <Link
+                    to="/messages/$peer"
+                    params={{ peer: t.person.id }}
+                    className={cn(
+                      "focus-ring flex items-center gap-2.5 rounded-xl p-2 transition-colors",
+                      active
+                        ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                        : "hover:bg-muted/60",
+                    )}
+                    aria-current={active ? "page" : undefined}
+                  >
+                    <span className="relative shrink-0">
+                      <img
+                        src={t.avatar || photoFor(t.person.id, t.person.name)}
+                        alt=""
+                        loading="lazy"
+                        className="size-10 rounded-full object-cover"
+                      />
+                      {t.unread && !active ? (
+                        <span className="absolute right-0 bottom-0 size-3 rounded-full border-2 border-background bg-emerald-500" />
+                      ) : null}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="flex items-center justify-between gap-1">
+                        <span
+                          className={cn(
+                            "truncate text-sm",
+                            active
+                              ? "font-bold text-sidebar-accent-foreground"
+                              : "font-semibold text-foreground",
+                          )}
+                        >
+                          {t.person.name}
+                        </span>
+                        <Badge
+                          variant="secondary"
+                          className="bg-primary-soft font-mono text-[0.6rem] text-primary"
+                        >
+                          {t.person.match}%
+                        </Badge>
+                      </span>
+                      <span
+                        className={cn(
+                          "mt-0.5 block truncate text-xs",
+                          active ? "text-sidebar-accent-foreground/70" : "text-muted-foreground",
+                        )}
+                      >
+                        {t.preview ?? "Twin ready to open"}
+                      </span>
+                    </span>
+                  </Link>
+                </li>
+              );
+            })}
+            {threads.length === 0 ? (
+              <li className="px-2 py-6 text-center text-xs text-muted-foreground">
+                No conversations yet.
+              </li>
+            ) : null}
+          </ul>
+        </aside>
 
-        {/* Chat */}
-        <section className="surface-card mt-2 flex min-h-0 flex-1 flex-col p-0">
-          <header className="flex items-center gap-3 border-b border-border px-4 py-2.5">
-            <p className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
-              <Bot aria-hidden="true" className="size-3.5 shrink-0 text-primary" />
-              <span className="truncate">{person.aiSummary}</span>
-            </p>
-            <div className="ml-auto flex shrink-0 items-center gap-2 sm:hidden">
-              <Label htmlFor="autopilot-m" className="text-xs text-muted-foreground">
-                Auto
+        {/* Main chat area — gets all the space the right panel used to occupy */}
+        <div className="flex min-w-0 flex-1 flex-col">
+          {/* Compact conversation header — who you're talking to */}
+          <header className="surface-card flex items-center gap-3 p-3">
+            <Button asChild variant="ghost" size="icon" className="shrink-0 md:hidden">
+              <Link to="/messages" aria-label="All conversations">
+                <ArrowLeft aria-hidden="true" className="size-4" />
+              </Link>
+            </Button>
+            <img
+              src={realProfile?.avatar_url || photoFor(person.id, person.name)}
+              alt={person.name}
+              className="size-11 shrink-0 rounded-full object-cover"
+            />
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2">
+                <h1 className="truncate text-base font-extrabold sm:text-lg">{person.name}</h1>
+                <Badge
+                  variant="secondary"
+                  className="bg-primary-soft font-mono text-[0.65rem] text-primary"
+                >
+                  {person.match}%
+                </Badge>
+              </div>
+              <p className="truncate text-xs text-muted-foreground">
+                {person.role} · {person.company}
+                <span className="hidden sm:inline">
+                  {" "}
+                  · <MapPin aria-hidden="true" className="inline size-3" /> {person.location}
+                </span>
+              </p>
+            </div>
+            <div className="hidden shrink-0 items-center gap-2 sm:flex">
+              <Label htmlFor="autopilot" className="text-xs text-muted-foreground">
+                My Twin replies
               </Label>
-              <Switch id="autopilot-m" checked={autopilot} onCheckedChange={setAutopilot} />
+              <Switch id="autopilot" checked={autopilot} onCheckedChange={setAutopilot} />
             </div>
           </header>
 
-          <div className="flex-1 space-y-3 overflow-y-auto p-4">
-            {loading ? (
-              <p className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Loader2 aria-hidden="true" className="size-4 animate-spin" /> Loading conversation…
+          {/* Chat */}
+          <section className="surface-card mt-2 flex min-h-0 flex-1 flex-col p-0">
+            <header className="flex items-center gap-3 border-b border-border px-4 py-2.5">
+              <p className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
+                <Bot aria-hidden="true" className="size-3.5 shrink-0 text-primary" />
+                <span className="truncate">{person.aiSummary}</span>
               </p>
-            ) : messages.length === 0 ? (
-              <div className="rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">
-                No messages yet. Start the Twin conversation to send a professional introduction
-                based on your profile, then let {person.name.split(" ")[0]}&apos;s Twin respond from
-                theirs.
+              <div className="ml-auto flex shrink-0 items-center gap-2 sm:hidden">
+                <Label htmlFor="autopilot-m" className="text-xs text-muted-foreground">
+                  Auto
+                </Label>
+                <Switch id="autopilot-m" checked={autopilot} onCheckedChange={setAutopilot} />
               </div>
-            ) : (
-              messages.map((m) => (
-                <motion.div
-                  key={m.id}
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className={cn(
-                    "flex",
-                    m.user_id === userId && m.sender === "user" ? "justify-end" : "justify-start",
-                  )}
-                >
-                  <p
+            </header>
+
+            <div className="flex-1 space-y-3 overflow-y-auto p-4">
+              {loading ? (
+                <p className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 aria-hidden="true" className="size-4 animate-spin" /> Loading conversation…
+                </p>
+              ) : messages.length === 0 ? (
+                <div className="rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">
+                  No messages yet. Start the Twin conversation to send a professional introduction
+                  based on your profile, then let {person.name.split(" ")[0]}'s Twin respond from
+                  theirs.
+                </div>
+              ) : (
+                messages.map((m) => (
+                  <motion.div
+                    key={m.id}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
                     className={cn(
-                      "max-w-[85%] whitespace-pre-line rounded-2xl px-4 py-2.5 text-sm leading-relaxed",
-                      m.user_id === userId && m.sender === "user"
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted text-foreground",
+                      "flex",
+                      m.user_id === userId && m.sender === "user" ? "justify-end" : "justify-start",
                     )}
                   >
-                    {m.body}
-                  </p>
-                </motion.div>
-              ))
-            )}
+                    <p
+                      className={cn(
+                        "max-w-[80%] whitespace-pre-line break-words rounded-2xl px-4 py-2.5 text-sm leading-relaxed",
+                        m.user_id === userId && m.sender === "user"
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-muted text-foreground",
+                      )}
+                    >
+                      {m.body}
+                    </p>
+                  </motion.div>
+                ))
+              )}
 
-            {thinking ? (
-              <p className="flex items-center gap-2 text-xs text-muted-foreground">
-                <Loader2 aria-hidden="true" className="size-3.5 animate-spin" /> {thinkingLabel}
-              </p>
-            ) : null}
-            <div ref={endRef} />
-          </div>
-
-          <div className="border-t border-border p-3">
-            <div className="mb-2 flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setDraft(person.conversationStarter)}
-                className="focus-ring min-w-0 flex-1 truncate rounded-lg border border-dashed border-primary/40 px-2.5 py-1.5 text-left text-xs text-muted-foreground hover:bg-primary-soft/50"
-              >
-                <span className="font-semibold text-primary">Suggestion:</span> “
-                {person.conversationStarter}”
-              </button>
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                className="shrink-0"
-                onClick={() => void letTwinsTalk()}
-                disabled={thinking !== null}
-              >
-                Start Twin conversation
-              </Button>
+              {thinking ? (
+                <p className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <Loader2 aria-hidden="true" className="size-3.5 animate-spin" /> {thinkingLabel}
+                </p>
+              ) : null}
+              <div ref={endRef} />
             </div>
 
-            <form onSubmit={send} className="flex gap-2">
-              <Input
-                value={draft}
-                onChange={(e) => setDraft(e.target.value)}
-                placeholder={`Message ${person.name.split(" ")[0]}…`}
-                aria-label={`Message ${person.name}`}
-                className="h-11"
-              />
-              <Button
-                type="submit"
-                className="h-11"
-                disabled={draft.trim().length === 0 || thinking !== null}
-              >
-                <Send aria-hidden="true" className="size-4" />
-                <span className="sr-only">Send</span>
-              </Button>
-            </form>
-          </div>
-        </section>
+            <div className="border-t border-border p-3">
+              <div className="mb-2 flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setDraft(person.conversationStarter)}
+                  className="focus-ring min-w-0 flex-1 truncate rounded-lg border border-dashed border-primary/40 px-2.5 py-1.5 text-left text-xs text-muted-foreground hover:bg-primary-soft/50"
+                >
+                  <span className="font-semibold text-primary">Suggestion:</span> “
+                  {person.conversationStarter}”
+                </button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="shrink-0"
+                  onClick={() => void letTwinsTalk()}
+                  disabled={thinking !== null}
+                >
+                  Start Twin conversation
+                </Button>
+              </div>
+
+              <form onSubmit={send} className="flex gap-2">
+                <Input
+                  value={draft}
+                  onChange={(e) => setDraft(e.target.value)}
+                  placeholder={`Message ${person.name.split(" ")[0]}…`}
+                  aria-label={`Message ${person.name}`}
+                  className="h-11"
+                />
+                <Button
+                  type="submit"
+                  className="h-11"
+                  disabled={draft.trim().length === 0 || thinking !== null}
+                >
+                  <Send aria-hidden="true" className="size-4" />
+                  <span className="sr-only">Send</span>
+                </Button>
+              </form>
+            </div>
+          </section>
+        </div>
       </div>
     </AppShell>
   );

@@ -75,13 +75,16 @@ const LEAK_PATTERNS = [
 ];
 
 function looksLikeLeak(text: string) {
-  if (LEAK_PATTERNS.some((re) => re.test(text))) return true;
-  // A reply that starts mid-word/mid-sentence is a truncated instruction fragment.
-  const firstChar = text.trimStart()[0] ?? "";
-  return /[a-z]/.test(firstChar) === true && !/^[a-z]+['’]?[a-z]*\s/.test(text.trimStart())
-    ? false
-    : false;
+  return LEAK_PATTERNS.some((re) => re.test(text));
 }
+
+/** Strips leading fragments/labels the model sometimes prepends. */
+function cleanReply(text: string) {
+  let out = text.replace(/^\s*(assistant|system|user)\s*:\s*/i, "").trim();
+  out = out.replace(/^[^A-Z"“'(]*(?=[A-Z"“'(])/u, "").trim();
+  return out || text.trim();
+}
+
 
 
 export async function handleTwinReply(data: TwinReplyInput) {

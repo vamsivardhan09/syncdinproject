@@ -342,61 +342,60 @@ function Conversation() {
 
   return (
     <AppShell>
-      <div className="mx-auto max-w-3xl">
-        <Button asChild variant="ghost" size="sm" className="-ml-2">
-          <Link to="/messages">
-            <ArrowLeft aria-hidden="true" className="size-4" /> All conversations
-          </Link>
-        </Button>
-
-        {/* Profile header — who you're talking to, before the chat starts. */}
-        <section className="surface-card mt-3 p-5 sm:p-6">
-          <div className="flex flex-wrap items-start gap-4">
-            <img
-              src={realProfile?.avatar_url || photoFor(person.id)}
-              alt={person.name}
-              className="size-16 rounded-full object-cover sm:size-20"
-            />
-            <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-center gap-2">
-                <h1 className="text-xl font-extrabold sm:text-2xl">{person.name}</h1>
-                <Badge
-                  variant="secondary"
-                  className="bg-primary-soft font-mono text-[0.7rem] text-primary"
-                >
-                  {person.match}% match
-                </Badge>
-              </div>
-              <p className="text-sm font-medium text-foreground/80">
-                {person.role} · {person.company}
-              </p>
-              <p className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
-                <MapPin aria-hidden="true" className="size-3.5" /> {person.location}
-              </p>
-              <p className="mt-3 text-sm text-muted-foreground">{person.bio}</p>
-              <div className="mt-3 flex flex-wrap gap-1.5">
-                {person.skills.slice(0, 4).map((s) => (
-                  <Badge key={s} variant="secondary" className="text-[0.7rem]">
-                    {s}
-                  </Badge>
-                ))}
-              </div>
+      <div className="mx-auto flex h-[calc(100dvh-8.5rem)] w-full max-w-4xl flex-col">
+        {/* Compact conversation header — who you're talking to. */}
+        <header className="surface-card flex items-center gap-3 p-3">
+          <Button asChild variant="ghost" size="icon" className="shrink-0">
+            <Link to="/messages" aria-label="All conversations">
+              <ArrowLeft aria-hidden="true" className="size-4" />
+            </Link>
+          </Button>
+          <img
+            src={realProfile?.avatar_url || photoFor(person.id)}
+            alt={person.name}
+            className="size-11 shrink-0 rounded-full object-cover"
+          />
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <h1 className="truncate text-base font-extrabold sm:text-lg">{person.name}</h1>
+              <Badge
+                variant="secondary"
+                className="bg-primary-soft font-mono text-[0.65rem] text-primary"
+              >
+                {person.match}%
+              </Badge>
             </div>
-          </div>
-          <div className="mt-4 rounded-xl border border-primary/20 bg-primary-soft/60 p-3 text-sm">
-            <p className="flex items-center gap-1.5 text-xs font-semibold tracking-wide text-primary uppercase">
-              Why your Twin matched you
+            <p className="truncate text-xs text-muted-foreground">
+              {person.role} · {person.company}
+              <span className="hidden sm:inline">
+                {" "}
+                · <MapPin aria-hidden="true" className="inline size-3" /> {person.location}
+              </span>
             </p>
-            <p className="mt-1 text-muted-foreground">{person.aiSummary}</p>
           </div>
-        </section>
+          <div className="hidden shrink-0 items-center gap-2 sm:flex">
+            <Label htmlFor="autopilot" className="text-xs text-muted-foreground">
+              My Twin replies
+            </Label>
+            <Switch id="autopilot" checked={autopilot} onCheckedChange={setAutopilot} />
+          </div>
+        </header>
 
         {/* Chat */}
-        <section className="surface-card mt-4 flex min-h-[26rem] flex-col p-0">
-          <header className="flex flex-wrap items-center gap-3 border-b border-border p-4">
-            <p className="flex items-center gap-1.5 text-sm font-semibold">
-              <Bot aria-hidden="true" className="size-4 text-primary" /> Twin-to-Twin chat
+        <section className="surface-card mt-2 flex min-h-0 flex-1 flex-col p-0">
+          <header className="flex items-center gap-3 border-b border-border px-4 py-2.5">
+            <p className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
+              <Bot aria-hidden="true" className="size-3.5 shrink-0 text-primary" />
+              <span className="truncate">{person.aiSummary}</span>
             </p>
+            <div className="ml-auto flex shrink-0 items-center gap-2 sm:hidden">
+              <Label htmlFor="autopilot-m" className="text-xs text-muted-foreground">
+                Auto
+              </Label>
+              <Switch id="autopilot-m" checked={autopilot} onCheckedChange={setAutopilot} />
+            </div>
+          </header>
+
             <div className="ml-auto flex items-center gap-2">
               <Label htmlFor="autopilot" className="text-xs text-muted-foreground">
                 My Twin replies for me

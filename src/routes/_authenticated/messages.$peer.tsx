@@ -441,25 +441,28 @@ function Conversation() {
             <div ref={endRef} />
           </div>
 
-          <div className="border-t border-border p-4">
-            <div className="mb-3 flex flex-wrap gap-2">
+          <div className="border-t border-border p-3">
+            <div className="mb-2 flex items-center gap-2">
               <button
                 type="button"
                 onClick={() => setDraft(person.conversationStarter)}
-                className="focus-ring flex-1 rounded-xl border border-dashed border-primary/40 p-2.5 text-left text-xs text-muted-foreground hover:bg-primary-soft/50"
+                className="focus-ring min-w-0 flex-1 truncate rounded-lg border border-dashed border-primary/40 px-2.5 py-1.5 text-left text-xs text-muted-foreground hover:bg-primary-soft/50"
               >
-                <span className="font-semibold text-primary">Use Twin suggestion:</span> “
+                <span className="font-semibold text-primary">Suggestion:</span> “
                 {person.conversationStarter}”
               </button>
               <Button
                 type="button"
+                size="sm"
                 variant="outline"
+                className="shrink-0"
                 onClick={() => void letTwinsTalk()}
                 disabled={thinking !== null}
               >
                 Let our Twins talk
               </Button>
             </div>
+
             <form onSubmit={send} className="flex gap-2">
               <Input
                 value={draft}

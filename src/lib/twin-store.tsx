@@ -12,6 +12,8 @@ import { toast } from "sonner";
 import { importSources, trainingSources, twinDimensions } from "@/lib/demo-data";
 
 const STORAGE_KEY = "syncdin.twin.v2";
+/** Which account the cached state belongs to — a new account must start clean. */
+const OWNER_KEY = "syncdin.twin.owner";
 
 export type TwinState = {
   onboarded: boolean;
@@ -124,7 +126,7 @@ async function persistConnection(peerSlug: string, remove = false): Promise<Conn
  * Reads the server's copy of the Twin. The database is the source of truth:
  * a row deleted on the server must not come back from this device's cache.
  */
-async function loadRemoteState(): Promise<Partial<TwinState> | null> {
+async function loadRemoteState(): Promise<(Partial<TwinState> & { userId: string }) | null> {
   try {
     const { supabase } = await import("@/integrations/supabase/client");
     const { data } = await supabase.auth.getUser();
@@ -136,6 +138,7 @@ async function loadRemoteState(): Promise<Partial<TwinState> | null> {
     ]);
     const rows = sources.data ?? [];
     return {
+      userId: data.user.id,
       connectedSources: rows.filter((r) => r.kind === "import").map((r) => r.source_id),
       trainedSources: rows.filter((r) => r.kind === "training").map((r) => r.source_id),
       connectionsMade: (connections.data ?? []).map((r) => r.peer_slug),
@@ -174,12 +177,22 @@ export function TwinProvider({ children }: { children: ReactNode }) {
     let active = true;
     void loadRemoteState().then((remote) => {
       if (!active || !remote) return;
+      // A different account on this device must never inherit cached progress.
+      try {
+        const owner = window.localStorage.getItem(OWNER_KEY);
+        if (owner !== remote.userId) {
+          window.localStorage.removeItem(STORAGE_KEY);
+          window.localStorage.setItem(OWNER_KEY, remote.userId);
+        }
+      } catch {
+        /* storage unavailable */
+      }
       setState((prev) => ({
         ...prev,
         connectedSources: remote.connectedSources ?? [],
         trainedSources: remote.trainedSources ?? [],
         connectionsMade: remote.connectionsMade ?? [],
-        onboarded: remote.onboarded ?? prev.onboarded,
+        onboarded: remote.onboarded ?? false,
       }));
     });
     return () => {

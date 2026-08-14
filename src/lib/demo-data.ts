@@ -377,9 +377,16 @@ export const twinDimensions = [
   { key: "networking", label: "Networking", base: 14 },
 ] as const;
 
-/** Deterministic demo avatar. Swap for a real storage URL when profiles go live. */
+/**
+ * Deterministic professional headshot for seeded network identities.
+ * Stable per id (same person always gets the same photo) and served from a
+ * reliable static host. Swap for a real storage URL when profiles go live.
+ */
 export function photoFor(id: string) {
-  return `https://i.pravatar.cc/240?u=${id}`;
+  let hash = 0;
+  for (let i = 0; i < id.length; i += 1) hash = (hash * 31 + id.charCodeAt(i)) % 100000;
+  const gender = hash % 2 === 0 ? "men" : "women";
+  return `https://randomuser.me/api/portraits/${gender}/${hash % 90}.jpg`;
 }
 
 export function personById(id: string) {

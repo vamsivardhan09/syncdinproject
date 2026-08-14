@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { personById } from "@/lib/demo-data";
+import { fallbackTwinReply } from "@/lib/twin-fallback";
 
 const PeerProfile = z.object({
   name: z.string().min(1),
@@ -44,7 +45,6 @@ export const generateTwinReply = createServerFn({ method: "POST" })
     if (!person) throw new Error("Unknown match");
 
     const key = process.env["LOVABLE_API_KEY"];
-    if (!key) throw new Error("AI is not configured");
 
 
     const u = data.userContext;
@@ -69,10 +69,35 @@ export const generateTwinReply = createServerFn({ method: "POST" })
       u.sources.length ? `Trained on: ${u.sources.join(", ")}` : "Trained on: no sources yet",
     ].join("\n");
 
+    const fallback = () =>
+      fallbackTwinReply({
+        speaker: data.speaker,
+        peer: {
+          name: person.name,
+          role: person.role,
+          company: person.company,
+          skills: person.skills,
+          goals: person.goals,
+          interests: person.interests,
+        },
+        user: {
+          name: u.name,
+          role: u.headline,
+          skills: [],
+          goals: [],
+        },
+        turn: data.transcript.length,
+      });
+
+    if (!key) return { text: fallback() };
+
+    const tone =
+      "Write like a real person texting, not an assistant. Exactly 1-2 short sentences, under 30 words total. No markdown, no bullet points, no greetings after the first message.";
+
     const system =
       data.speaker === "peer"
-        ? `You are ${person.name}'s AI Twin on SyncdIn — an AI that networks on their behalf. Speak as ${person.name} in first person, warm, direct, professional. Use only the profile facts below; never invent employers or numbers. Reference the other person's context when it helps. Ask one useful question. 1-3 short sentences, no greetings after the first message, no emoji spam, no markdown.\n\nYOUR PROFILE:\n${peerBrief}\n\nTHE PERSON YOU ARE TALKING TO:\n${userBrief}`
-        : `You are the AI Twin of ${u.name || "the user"} on SyncdIn, networking on their behalf. Speak as them in first person, confident and concise. Use only the facts below; if something is unknown, keep it general instead of inventing it. Move the conversation toward a concrete next step. 1-3 short sentences, no markdown.\n\nYOUR PROFILE:\n${userBrief}\n\nTHE PERSON YOU ARE TALKING TO:\n${peerBrief}`;
+        ? `You are ${person.name}'s AI Twin on SyncdIn — an AI that networks on their behalf. Speak as ${person.name} in first person, warm, direct, professional. Use only the profile facts below; never invent employers or numbers. Reference the other person's context when it helps. Ask one useful question. 1-3 short sentences, no greetings after the first message, no emoji spam, no markdown.\n\n${tone}\n\nYOUR PROFILE:\n${peerBrief}\n\nTHE PERSON YOU ARE TALKING TO:\n${userBrief}`
+        : `You are the AI Twin of ${u.name || "the user"} on SyncdIn, networking on their behalf. Speak as them in first person, confident and concise. Use only the facts below; if something is unknown, keep it general instead of inventing it. Move the conversation toward a concrete next step. 1-3 short sentences, no markdown.\n\n${tone}\n\nYOUR PROFILE:\n${userBrief}\n\nTHE PERSON YOU ARE TALKING TO:\n${peerBrief}`;
 
     const messages = [
       { role: "system", content: system },
@@ -88,17 +113,16 @@ export const generateTwinReply = createServerFn({ method: "POST" })
     const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: { "Content-Type": "application/json", "Lovable-API-Key": key },
-      body: JSON.stringify({ model: "google/gemini-3.6-flash", messages }),
+      body: JSON.stringify({ model: "google/gemini-3.6-flash", messages, max_tokens: 120 }),
     });
 
-    if (res.status === 429) throw new Error("Twin is rate limited — try again in a moment.");
-    if (res.status === 402) throw new Error("AI credits exhausted for this workspace.");
-    if (!res.ok) throw new Error(`Twin failed (${res.status})`);
+    // A gateway hiccup must not break the loop — fall back to a contextual line.
+    if (!res.ok) return { text: fallback() };
 
     const json = (await res.json()) as {
       choices?: { message?: { content?: string } }[];
     };
     const text = json.choices?.[0]?.message?.content?.trim();
-    if (!text) throw new Error("Twin returned an empty reply");
+    if (!text) return { text: fallback() };
     return { text };
   });

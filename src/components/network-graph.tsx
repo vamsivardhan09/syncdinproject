@@ -197,11 +197,12 @@ export function NetworkGraph() {
           </h2>
           <p className="text-sm text-muted-foreground">
             {connectedCount === 0
-              ? "No connections yet — the outer ring is who your Twin thinks you should meet."
+              ? "Nobody is connected yet — every face on the outer ring is a person your Twin already believes is worth your time."
               : `${connectedCount} connection${connectedCount > 1 ? "s" : ""} · ${
                   nodes.length - connectedCount
                 } suggested by your Twin.`}
           </p>
+
         </div>
         <div className="flex gap-2" role="group" aria-label="Filter the network graph">
           {(["all", "connections"] as const).map((m) => (

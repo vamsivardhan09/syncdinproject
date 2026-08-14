@@ -64,7 +64,7 @@ function isRepetitive(candidate: string, previous: string[]) {
  */
 const LEAK_PATTERNS = [
   /sentence structure and tone/i,
-  /\b(1|one)\s*[–-]\s*3 short sentences\b/i,
+  /\b(2|two)\s*[–-]\s*5 (short )?sentences\b/i,
   /under \d+ words/i,
   /\bno markdown\b/i,
   /\b(YOUR PROFILE|THE OTHER PERSON|Known overlap|Suggested collaboration|Why matched)\b/,
@@ -73,6 +73,7 @@ const LEAK_PATTERNS = [
   /\byou are [a-z' ]+'s ai twin\b/i,
   /\bfirst person as their professional representative\b/i,
 ];
+
 
 function looksLikeLeak(text: string) {
   return LEAK_PATTERNS.some((re) => re.test(text));

@@ -35,10 +35,7 @@ export const Route = createFileRoute("/_authenticated/messages/$peer")({
   head: ({ loaderData }) => {
     if (!loaderData) {
       return {
-        meta: [
-          { title: "Twin conversation — SyncdIn" },
-          { name: "robots", content: "noindex" },
-        ],
+        meta: [{ title: "Twin conversation — SyncdIn" }, { name: "robots", content: "noindex" }],
       };
     }
 
@@ -144,7 +141,6 @@ function Conversation() {
     };
   }, [peer, demoPerson]);
 
-
   useEffect(() => {
     void (async () => {
       const { data: auth } = await supabase.auth.getUser();
@@ -248,7 +244,6 @@ function Conversation() {
         : undefined,
     [person],
   );
-
 
   const twinTurn = useCallback(
     async (speaker: "peer" | "user", transcript: { sender: "user" | "peer"; body: string }[]) => {
@@ -359,7 +354,6 @@ function Conversation() {
     );
   }
 
-
   const thinkingLabel =
     thinking === "peer" ? `${person.name.split(" ")[0]}'s Twin is typing…` : "Your Twin is typing…";
 
@@ -419,8 +413,6 @@ function Conversation() {
             </div>
           </header>
 
-
-
           <div className="flex-1 space-y-3 overflow-y-auto p-4">
             {loading ? (
               <p className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -429,7 +421,8 @@ function Conversation() {
             ) : messages.length === 0 ? (
               <div className="rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">
                 No messages yet. Start the Twin conversation to send a professional introduction
-                based on your profile, then let {person.name.split(" ")[0]}&apos;s Twin respond from theirs.
+                based on your profile, then let {person.name.split(" ")[0]}&apos;s Twin respond from
+                theirs.
               </div>
             ) : (
               messages.map((m) => (
@@ -437,15 +430,15 @@ function Conversation() {
                   key={m.id}
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
-                    className={cn(
-                      "flex",
-                      m.user_id === userId && m.sender === "user" ? "justify-end" : "justify-start",
-                    )}
+                  className={cn(
+                    "flex",
+                    m.user_id === userId && m.sender === "user" ? "justify-end" : "justify-start",
+                  )}
                 >
                   <p
                     className={cn(
-                      "max-w-[85%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed",
-                       m.user_id === userId && m.sender === "user"
+                      "max-w-[85%] whitespace-pre-line rounded-2xl px-4 py-2.5 text-sm leading-relaxed",
+                      m.user_id === userId && m.sender === "user"
                         ? "bg-primary text-primary-foreground"
                         : "bg-muted text-foreground",
                     )}

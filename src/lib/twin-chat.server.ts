@@ -90,7 +90,7 @@ function cleanReply(text: string) {
  * agreed. Automatic Twin replies stop there so the real person takes over.
  */
 const OUTCOME_PATTERNS = [
-  /\b(let'?s|we'?ll|i'?ll) (set up|schedule|book|jump on|hop on|do) (a )?(call|chat|meeting|zoom|интро|intro)/i,
+  /\b(let'?s|we'?ll|i'?ll) (set up|schedule|book|jump on|hop on|do) (a )?(call|chat|meeting|zoom|intro)/i,
   /\b(send|share) (you |me )?(a |the )?(calendar|invite|link|times|availability)/i,
   /\bworks for me\b|\bsounds like a plan\b|\bdeal\b/i,
   /\b(i can|you can) (own|take) (the )?[a-z/ ]{2,30}(layer|side|side of it)\b/i,

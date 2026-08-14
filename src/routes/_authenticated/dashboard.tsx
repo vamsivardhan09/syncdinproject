@@ -128,6 +128,7 @@ function Dashboard() {
   const ranked = useMemo(() => rankCandidates(vector, demoPeople), [vector]);
   const worthMeeting = useMemo(() => ranked.filter((r) => r.score >= 75).length, [ranked]);
   const topMatches = useMemo(() => ranked.slice(0, 3).map((r) => r.candidate), [ranked]);
+  const trained = state.connectedSources.length + state.trainedSources.length;
   const scoreFor = (id: string) => ranked.find((r) => r.candidate.id === id)?.score ?? 0;
 
   return (
@@ -168,6 +169,30 @@ function Dashboard() {
         </div>
       </motion.header>
 
+
+      {trained === 0 ? (
+        <motion.section
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="surface-card mt-6 flex flex-wrap items-center gap-4 border-primary/30 bg-primary-soft/40 p-5"
+        >
+          <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+            <BrainCircuit aria-hidden="true" className="size-5" />
+          </span>
+          <div className="min-w-0 flex-1">
+            <h2 className="text-base font-bold">Train your AI Twin</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              A few minutes of real context — your work, skills and goals — and your Twin starts
+              finding professional connections worth your time.
+            </p>
+          </div>
+          <Button asChild className="shrink-0">
+            <Link to="/twin">
+              Start training <ArrowRight aria-hidden="true" className="size-4" />
+            </Link>
+          </Button>
+        </motion.section>
+      ) : null}
 
       <div className="mt-6 grid gap-6 xl:grid-cols-[1fr_20rem]">
         <div className="min-w-0 space-y-6">

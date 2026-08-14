@@ -362,7 +362,7 @@ function Conversation() {
             </Link>
           </Button>
           <img
-            src={realProfile?.avatar_url || photoFor(person.id)}
+            src={realProfile?.avatar_url || photoFor(person.id, person.name)}
             alt={person.name}
             className="size-11 shrink-0 rounded-full object-cover"
           />

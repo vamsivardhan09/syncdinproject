@@ -58,6 +58,35 @@ function isRepetitive(candidate: string, previous: string[]) {
   });
 }
 
+/**
+ * Guards against the model echoing its own instructions back into the chat
+ * (e.g. "…ary sentence structure and tone.") or emitting prompt scaffolding.
+ */
+const LEAK_PATTERNS = [
+  /sentence structure and tone/i,
+  /\b(1|one)\s*[–-]\s*3 short sentences\b/i,
+  /under \d+ words/i,
+  /\bno markdown\b/i,
+  /\b(YOUR PROFILE|THE OTHER PERSON|Known overlap|Suggested collaboration|Why matched)\b/,
+  /\bas an ai\b/i,
+  /\b(system|assistant) (prompt|message)\b/i,
+  /\byou are [a-z' ]+'s ai twin\b/i,
+  /\bfirst person as their professional representative\b/i,
+];
+
+function looksLikeLeak(text: string) {
+  return LEAK_PATTERNS.some((re) => re.test(text));
+}
+
+/** Strips leading fragments/labels the model sometimes prepends. */
+function cleanReply(text: string) {
+  let out = text.replace(/^\s*(assistant|system|user)\s*:\s*/i, "").trim();
+  out = out.replace(/^[^A-Z"“'(]*(?=[A-Z"“'(])/u, "").trim();
+  return out || text.trim();
+}
+
+
+
 export async function handleTwinReply(data: TwinReplyInput) {
   const person = data.peerProfile ?? personById(data.peerId);
   if (!person) throw new Error("Unknown match");
@@ -154,8 +183,14 @@ ${data.speaker === "peer" ? userBrief : peerBrief}`;
   if (!response.ok) return { text: fallback() };
 
   const json = (await response.json()) as { choices?: { message?: { content?: string } }[] };
-  const text = json.choices?.[0]?.message?.content?.trim();
-  if (!text || text.split(/\s+/).length < 4 || isRepetitive(text, previousForSpeaker)) {
+  const raw = json.choices?.[0]?.message?.content?.trim();
+  const text = raw ? cleanReply(raw) : "";
+  if (
+    !text ||
+    text.split(/\s+/).length < 4 ||
+    looksLikeLeak(text) ||
+    isRepetitive(text, previousForSpeaker)
+  ) {
     return { text: fallback() };
   }
   return { text };

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "motion/react";
-import { ArrowRight, BrainCircuit, Radar, Sparkle, Users } from "lucide-react";
+import { ArrowRight, BrainCircuit, Clock, Radar, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { useTwin } from "@/lib/twin-store";
@@ -116,7 +116,7 @@ export function WelcomeTwinModal() {
               </Button>
             </div>
             <p className="mt-3 flex items-center gap-1.5 text-xs text-muted-foreground">
-              <Sparkle aria-hidden="true" className="size-3.5" /> Takes about a minute — one upload
+              <Clock aria-hidden="true" className="size-3.5" /> Takes about a minute — one upload
               is enough to start matching.
             </p>
           </motion.div>

@@ -36,8 +36,6 @@ export type ConnectResult = { ok: boolean; error?: string };
 type TwinContextValue = {
   state: TwinState;
   hydrated: boolean;
-  /** True once the server copy of the Twin has been read for this account. */
-  synced: boolean;
   intelligence: number;
   dimensions: { key: string; label: string; value: number }[];
   gainFor: (id: string) => number;
@@ -154,67 +152,50 @@ async function loadRemoteState(): Promise<Partial<TwinState> | null> {
 export function TwinProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<TwinState>(initialState);
   const [hydrated, setHydrated] = useState(false);
-  const [synced, setSynced] = useState(false);
-  const [uid, setUid] = useState<string | null>(null);
   const [pendingConnections, setPending] = useState<string[]>([]);
   const stateRef = useRef(state);
   stateRef.current = state;
 
-  // The cached blob is stamped with the account that produced it, so a brand new
-  // account signing in on the same browser never inherits someone else's Twin.
-  // The backend stays authoritative once it answers.
+
+
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(STORAGE_KEY);
+      if (raw) setState({ ...initialState, ...(JSON.parse(raw) as Partial<TwinState>) });
+    } catch {
+      /* ignore corrupt state */
+    }
+    setHydrated(true);
+  }, []);
+
+  // The backend is authoritative once it answers: local cache only bridges the
+  // first paint, so anything removed server-side stays removed here.
   useEffect(() => {
     let active = true;
-    void (async () => {
-      let cached: (Partial<TwinState> & { uid?: string }) | null = null;
-      try {
-        const raw = window.localStorage.getItem(STORAGE_KEY);
-        if (raw) cached = JSON.parse(raw) as Partial<TwinState> & { uid?: string };
-      } catch {
-        /* ignore corrupt state */
-      }
-      let currentUid: string | null = null;
-      try {
-        const { supabase } = await import("@/integrations/supabase/client");
-        const { data } = await supabase.auth.getUser();
-        currentUid = data.user?.id ?? null;
-      } catch {
-        /* offline — fall through with no identity */
-      }
-      if (!active) return;
-      setUid(currentUid);
-      if (cached && cached.uid && cached.uid === currentUid) {
-        setState({ ...initialState, ...cached });
-      }
-      setHydrated(true);
-
-      const remote = await loadRemoteState();
-      if (!active) return;
-      if (remote) {
-        setState((prev) => ({
-          ...prev,
-          connectedSources: remote.connectedSources ?? [],
-          trainedSources: remote.trainedSources ?? [],
-          connectionsMade: remote.connectionsMade ?? [],
-          onboarded: remote.onboarded ?? prev.onboarded,
-        }));
-      }
-      setSynced(true);
-    })();
+    void loadRemoteState().then((remote) => {
+      if (!active || !remote) return;
+      setState((prev) => ({
+        ...prev,
+        connectedSources: remote.connectedSources ?? [],
+        trainedSources: remote.trainedSources ?? [],
+        connectionsMade: remote.connectionsMade ?? [],
+        onboarded: remote.onboarded ?? prev.onboarded,
+      }));
+    });
     return () => {
       active = false;
     };
   }, []);
 
+
   useEffect(() => {
     if (!hydrated) return;
     try {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...state, uid }));
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     } catch {
       /* storage unavailable */
     }
-  }, [state, hydrated, uid]);
-
+  }, [state, hydrated]);
 
   const gainFor = useCallback((id: string) => {
     const imported = importSources.find((s) => s.id === id);
@@ -385,7 +366,6 @@ export function TwinProvider({ children }: { children: ReactNode }) {
     () => ({
       state,
       hydrated,
-      synced,
       intelligence,
       dimensions,
       gainFor,
@@ -401,7 +381,6 @@ export function TwinProvider({ children }: { children: ReactNode }) {
     [
       state,
       hydrated,
-      synced,
       intelligence,
       dimensions,
       gainFor,

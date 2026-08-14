@@ -377,21 +377,9 @@ export const twinDimensions = [
   { key: "networking", label: "Networking", base: 14 },
 ] as const;
 
-/**
- * Deterministic seeded-identity photo. These are stock portraits standing in for
- * seeded network people — not claims about real individuals. Same id always
- * resolves to the same portrait, so the network never reshuffles faces.
- * Swap for a real storage URL when profiles go live.
- */
+/** Deterministic demo avatar. Swap for a real storage URL when profiles go live. */
 export function photoFor(id: string) {
-  let h = 2166136261;
-  for (let i = 0; i < id.length; i += 1) {
-    h ^= id.charCodeAt(i);
-    h = Math.imul(h, 16777619);
-  }
-  const seed = Math.abs(h);
-  const set = seed % 2 === 0 ? "men" : "women";
-  return `https://randomuser.me/api/portraits/${set}/${seed % 90}.jpg`;
+  return `https://i.pravatar.cc/240?u=${id}`;
 }
 
 export function personById(id: string) {

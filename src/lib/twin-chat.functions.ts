@@ -44,6 +44,7 @@ export const generateTwinReply = createServerFn({ method: "POST" })
     if (!person) throw new Error("Unknown match");
 
     const key = process.env["LOVABLE_API_KEY"];
+    if (!key) throw new Error("AI is not configured");
 
 
     const u = data.userContext;
@@ -70,8 +71,8 @@ export const generateTwinReply = createServerFn({ method: "POST" })
 
     const system =
       data.speaker === "peer"
-        ? `You are ${person.name}'s AI Twin on SyncdIn, messaging on their behalf. Speak as ${person.name} in first person: warm, casual, human — like a real chat message, not an email. HARD LIMIT: 1-2 short sentences, under 30 words total. Use only the profile facts below; never invent employers or numbers. No greetings after the first message, no emoji, no markdown, no bullet points.\n\nYOUR PROFILE:\n${peerBrief}\n\nTHE PERSON YOU ARE TALKING TO:\n${userBrief}`
-        : `You are the AI Twin of ${u.name || "the user"} on SyncdIn, messaging on their behalf. Speak as them in first person: casual, direct, human. HARD LIMIT: 1-2 short sentences, under 30 words total. Use only the facts below; keep it general rather than inventing details. Nudge toward one concrete next step. No emoji, no markdown.\n\nYOUR PROFILE:\n${userBrief}\n\nTHE PERSON YOU ARE TALKING TO:\n${peerBrief}`;
+        ? `You are ${person.name}'s AI Twin on SyncdIn — an AI that networks on their behalf. Speak as ${person.name} in first person, warm, direct, professional. Use only the profile facts below; never invent employers or numbers. Reference the other person's context when it helps. Ask one useful question. 1-3 short sentences, no greetings after the first message, no emoji spam, no markdown.\n\nYOUR PROFILE:\n${peerBrief}\n\nTHE PERSON YOU ARE TALKING TO:\n${userBrief}`
+        : `You are the AI Twin of ${u.name || "the user"} on SyncdIn, networking on their behalf. Speak as them in first person, confident and concise. Use only the facts below; if something is unknown, keep it general instead of inventing it. Move the conversation toward a concrete next step. 1-3 short sentences, no markdown.\n\nYOUR PROFILE:\n${userBrief}\n\nTHE PERSON YOU ARE TALKING TO:\n${peerBrief}`;
 
     const messages = [
       { role: "system", content: system },
@@ -84,58 +85,20 @@ export const generateTwinReply = createServerFn({ method: "POST" })
       })),
     ];
 
-    /**
-     * Deterministic, profile-specific fallback. Used when the AI gateway is
-     * unavailable so the conversation still reads like this person's Twin
-     * instead of a generic canned paragraph.
-     */
-    const fallback = (): string => {
-      const turn = data.transcript.length;
-      const theirFirst = person.name.split(" ")[0] ?? person.name;
-      const myFirst = (u.name || "there").split(" ")[0];
-      const skill = person.skills[0];
-      const goal = person.goals[0];
-      const overlap = person.reasons[0];
-      if (data.speaker === "peer") {
-        const lines = [
-          `Hey ${myFirst} — good to connect. I'm deep in ${skill ?? person.role.toLowerCase()} right now. What are you working on?`,
-          goal
-            ? `Right now I'm focused on ${goal.toLowerCase()}. Does that overlap with what you're doing?`
-            : `${person.role} at ${person.company} keeps me busy. Where's your focus at the moment?`,
-          overlap
-            ? `${overlap.toLowerCase()} — that's the part I'd want to compare notes on. Worth a call?`
-            : `Sounds relevant. Want to set up a short call?`,
-        ];
-        return lines[turn % lines.length] ?? lines[0]!;
-      }
-      const lines = [
-        `Hi ${theirFirst} — our Twins matched${u.headline ? ` on ${u.headline.toLowerCase()}` : ""}. What are you focused on this quarter?`,
-        skill
-          ? `That's relevant to me — I work close to ${skill.toLowerCase()} too. Where could we help each other?`
-          : `That sounds relevant to what I'm building. Where could we help each other?`,
-        `Makes sense. Want me to set up a proper intro so you two can take it from here?`,
-      ];
-      return lines[turn % lines.length] ?? lines[0]!;
+    const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Lovable-API-Key": key },
+      body: JSON.stringify({ model: "google/gemini-3.6-flash", messages }),
+    });
+
+    if (res.status === 429) throw new Error("Twin is rate limited — try again in a moment.");
+    if (res.status === 402) throw new Error("AI credits exhausted for this workspace.");
+    if (!res.ok) throw new Error(`Twin failed (${res.status})`);
+
+    const json = (await res.json()) as {
+      choices?: { message?: { content?: string } }[];
     };
-
-    if (!key) return { text: fallback() };
-
-    let text: string | undefined;
-    try {
-      const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "Lovable-API-Key": key },
-        body: JSON.stringify({ model: "google/gemini-3.6-flash", messages, max_tokens: 90 }),
-      });
-      if (res.ok) {
-        const json = (await res.json()) as {
-          choices?: { message?: { content?: string } }[];
-        };
-        text = json.choices?.[0]?.message?.content?.trim();
-      }
-    } catch {
-      /* fall through to the deterministic reply */
-    }
-
-    return { text: text && text.length > 0 ? text : fallback() };
+    const text = json.choices?.[0]?.message?.content?.trim();
+    if (!text) throw new Error("Twin returned an empty reply");
+    return { text };
   });

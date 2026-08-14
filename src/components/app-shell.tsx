@@ -30,16 +30,9 @@ const nav = [
   { to: "/settings", label: "Settings", icon: Settings },
 ] as const;
 
-export function AppShell({
-  children,
-  /** Chat-style pages need the full viewport instead of a padded document. */
-  dense = false,
-}: {
-  children: ReactNode;
-  dense?: boolean;
-}) {
+export function AppShell({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
-  const { state, intelligence, synced } = useTwin();
+  const { state, intelligence } = useTwin();
   const next = nextBestAction([...state.connectedSources, ...state.trainedSources]);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [open, setOpen] = useState(false);
@@ -55,14 +48,6 @@ export function AppShell({
   }, [pathname]);
 
   useEffect(() => setOpen(false), [pathname]);
-
-  // A fresh account must see the onboarding journey before the product shell.
-  // Gated on `synced` so an existing member on a new device is never bounced.
-  useEffect(() => {
-    if (!synced || state.onboarded) return;
-    if (pathname.startsWith("/onboarding")) return;
-    void navigate({ to: "/onboarding", replace: true });
-  }, [synced, state.onboarded, pathname, navigate]);
 
 
   async function signOut() {
@@ -165,16 +150,7 @@ export function AppShell({
             <NotificationBell />
           </span>
         </header>
-        <main
-          className={cn(
-            "mx-auto w-full",
-            dense
-              ? "max-w-5xl px-3 py-3 sm:px-5 sm:py-4 lg:px-6"
-              : "max-w-6xl px-4 py-8 sm:px-6 lg:px-10",
-          )}
-        >
-          {children}
-        </main>
+        <main className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 lg:px-10">{children}</main>
       </div>
     </div>
   );

@@ -36,6 +36,8 @@ export type ConnectResult = { ok: boolean; error?: string };
 type TwinContextValue = {
   state: TwinState;
   hydrated: boolean;
+  /** True once the server copy of the Twin has been read for this account. */
+  synced: boolean;
   intelligence: number;
   dimensions: { key: string; label: string; value: number }[];
   gainFor: (id: string) => number;
@@ -383,6 +385,7 @@ export function TwinProvider({ children }: { children: ReactNode }) {
     () => ({
       state,
       hydrated,
+      synced,
       intelligence,
       dimensions,
       gainFor,
@@ -398,6 +401,7 @@ export function TwinProvider({ children }: { children: ReactNode }) {
     [
       state,
       hydrated,
+      synced,
       intelligence,
       dimensions,
       gainFor,

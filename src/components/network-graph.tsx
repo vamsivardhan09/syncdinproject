@@ -197,11 +197,12 @@ export function NetworkGraph() {
           </h2>
           <p className="text-sm text-muted-foreground">
             {connectedCount === 0
-              ? "No connections yet — the outer ring is who your Twin thinks you should meet."
+              ? "Nobody is connected yet — every face on the outer ring is a person your Twin already believes is worth your time."
               : `${connectedCount} connection${connectedCount > 1 ? "s" : ""} · ${
                   nodes.length - connectedCount
                 } suggested by your Twin.`}
           </p>
+
         </div>
         <div className="flex gap-2" role="group" aria-label="Filter the network graph">
           {(["all", "connections"] as const).map((m) => (
@@ -352,6 +353,29 @@ export function NetworkGraph() {
           </motion.div>
         ) : null}
       </div>
+
+      <div className="flex flex-wrap items-center gap-3 border-t border-border p-5">
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold">
+            {connectedCount === 0
+              ? "Your ring fills up as your Twin learns you"
+              : "Sharper signal, closer ring"}
+          </p>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            Right now your Twin is matching on {intelligence}% of your story. Add one more source
+            and the people on this canvas change — closer roles, closer goals, fewer strangers.
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <Button asChild size="sm">
+            <Link to="/twin">Improve my matches</Link>
+          </Button>
+          <Button asChild size="sm" variant="outline">
+            <Link to="/network">Browse people</Link>
+          </Button>
+        </div>
+      </div>
     </section>
+
   );
 }

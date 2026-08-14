@@ -58,6 +58,32 @@ function isRepetitive(candidate: string, previous: string[]) {
   });
 }
 
+/**
+ * Guards against the model echoing its own instructions back into the chat
+ * (e.g. "…ary sentence structure and tone.") or emitting prompt scaffolding.
+ */
+const LEAK_PATTERNS = [
+  /sentence structure and tone/i,
+  /\b(1|one)\s*[–-]\s*3 short sentences\b/i,
+  /under \d+ words/i,
+  /\bno markdown\b/i,
+  /\b(YOUR PROFILE|THE OTHER PERSON|Known overlap|Suggested collaboration|Why matched)\b/,
+  /\bas an ai\b/i,
+  /\b(system|assistant) (prompt|message)\b/i,
+  /\byou are [a-z' ]+'s ai twin\b/i,
+  /\bfirst person as their professional representative\b/i,
+];
+
+function looksLikeLeak(text: string) {
+  if (LEAK_PATTERNS.some((re) => re.test(text))) return true;
+  // A reply that starts mid-word/mid-sentence is a truncated instruction fragment.
+  const firstChar = text.trimStart()[0] ?? "";
+  return /[a-z]/.test(firstChar) === true && !/^[a-z]+['’]?[a-z]*\s/.test(text.trimStart())
+    ? false
+    : false;
+}
+
+
 export async function handleTwinReply(data: TwinReplyInput) {
   const person = data.peerProfile ?? personById(data.peerId);
   if (!person) throw new Error("Unknown match");

@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import {
   ArrowRight,
@@ -29,11 +29,17 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { importSources, trainingSources } from "@/lib/demo-data";
+import { dataSources, importSources, trainingSources } from "@/lib/demo-data";
 import { SOURCE_SIGNALS } from "@/lib/matching";
 import { importGitHub, importLinkedIn, normalizeLinkedInUrl } from "@/lib/profile-import";
 import { syncFlows, type SyncFlow } from "@/lib/sync-flows";
 import { TeachTwinModal } from "@/components/teach-twin-modal";
+import {
+  ArchiveImportModal,
+  type ArchiveStatus,
+} from "@/components/archive-import-modal";
+import { GoogleTwinModal, type GoogleStage } from "@/components/google-twin-modal";
+import type { ArchiveSource } from "@/lib/twin-archive";
 import { analyzePortfolio, analyzeResume, analyzeText } from "@/lib/twin-analyze.functions";
 import { openGaps, twinKnowledge } from "@/lib/twin-knowledge";
 import { useTwin } from "@/lib/twin-store";
@@ -92,6 +98,11 @@ function Twin() {
   const [urlAsk, setUrlAsk] = useState<"linkedin" | "github" | null>(null);
   const [askValue, setAskValue] = useState("");
   const [teach, setTeach] = useState<string | null>(null);
+  const [archive, setArchive] = useState<ArchiveSource | null>(null);
+  const [archiveStatus, setArchiveStatus] = useState<Record<string, ArchiveStatus>>({});
+  const [googleOpen, setGoogleOpen] = useState(false);
+  const [googleStage, setGoogleStage] = useState<GoogleStage>("idle");
+  const [googleMessage, setGoogleMessage] = useState<string | null>(null);
 
   const [result, setResult] = useState<{
     name: string;
@@ -100,6 +111,34 @@ function Twin() {
     to: number;
   } | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
+
+  // Real outcome of the separate Google authorization, reported by the callback.
+  useEffect(() => {
+    const outcome = new URLSearchParams(window.location.search).get("google");
+    if (!outcome) return;
+    window.history.replaceState(null, "", window.location.pathname);
+    if (outcome === "learned") {
+      setGoogleStage("learned");
+      setGoogleMessage("Google Contacts and Calendar signals are stored on your Twin.");
+      setGoogleOpen(true);
+      setBaseline(intelligence);
+      connectSource("google");
+      toast.success("Your Twin learned from your Google account.");
+      return;
+    }
+    setGoogleStage("error");
+    setGoogleMessage(
+      outcome === "denied"
+        ? "You cancelled the Google permission request, so nothing was imported."
+        : outcome === "expired"
+          ? "That authorization link expired. Start the Google connection again."
+          : outcome === "setup"
+            ? "Google data access is not configured for this deployment yet."
+            : "We couldn't read your Google data. Nothing was imported.",
+    );
+    setGoogleOpen(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const sources = [...state.connectedSources, ...state.trainedSources];
   const knowledge = twinKnowledge(sources).filter((g) => g.items.length > 0);
@@ -382,6 +421,81 @@ function Twin() {
 
 
         <div className="mt-5 space-y-4">
+          {dataSources.map((source) => {
+            const done = state.connectedSources.includes(source.id);
+            const status: ArchiveStatus = done
+              ? "learned"
+              : (archiveStatus[source.id] ?? "not_connected");
+            const isGoogle = source.id === "google";
+            return (
+              <article
+                key={source.id}
+                className={cn("surface-card p-5", done && "border-primary/40")}
+              >
+                <div className="flex flex-wrap items-start justify-between gap-4">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="text-base font-bold">{source.name}</h3>
+                      <Badge
+                        variant="outline"
+                        className={cn(
+                          "font-normal",
+                          done && "border-success/40 text-success",
+                          !done && status === "waiting" && "border-primary/40 text-primary",
+                        )}
+                      >
+                        {done
+                          ? "Learned"
+                          : isGoogle
+                            ? "Read-only authorization"
+                            : status === "waiting"
+                              ? "Waiting for export"
+                              : status === "processing"
+                                ? "Processing"
+                                : "Not connected"}
+                      </Badge>
+                    </div>
+                    <p className="mt-1 text-sm font-medium">{source.pitch}</p>
+                    <p className="mt-1 text-sm text-muted-foreground">{source.detail}</p>
+                    {done ? (
+                      <p className="mt-3 text-sm italic text-primary">“{source.afterMessage}”</p>
+                    ) : null}
+                  </div>
+                  <div className="text-right">
+                    <p className="font-mono text-xs font-semibold text-success">+{source.gain}%</p>
+                    <Button
+                      className="mt-2"
+                      variant={done ? "secondary" : "default"}
+                      disabled={done}
+                      onClick={() => {
+                        setBaseline(intelligence);
+                        if (isGoogle) {
+                          setGoogleStage("idle");
+                          setGoogleMessage(null);
+                          setGoogleOpen(true);
+                        } else {
+                          setArchive(
+                            source.id === "linkedin_export"
+                              ? "linkedin"
+                              : (source.id as ArchiveSource),
+                          );
+                        }
+                      }}
+                    >
+                      {done ? (
+                        <>
+                          <Check aria-hidden="true" className="size-4" /> Learned
+                        </>
+                      ) : (
+                        "Teach my Twin"
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              </article>
+            );
+          })}
+
           {trainingSources.map((source) => {
             const done = state.trainedSources.includes(source.id);
             return (
@@ -565,6 +679,46 @@ function Twin() {
         }}
       />
 
+
+      <ArchiveImportModal
+        source={archive}
+        status={
+          archive
+            ? (state.connectedSources.includes(archive === "linkedin" ? "linkedin_export" : archive)
+                ? "learned"
+                : (archiveStatus[archive === "linkedin" ? "linkedin_export" : archive] ??
+                  "not_connected"))
+            : "not_connected"
+        }
+        onStatusChange={(next) => {
+          if (!archive) return;
+          const id = archive === "linkedin" ? "linkedin_export" : archive;
+          setArchiveStatus((prev) => ({ ...prev, [id]: next }));
+        }}
+        onLearned={(learned) => {
+          if (!archive) return;
+          const id = archive === "linkedin" ? "linkedin_export" : archive;
+          const name = dataSources.find((s) => s.id === id)?.name ?? "New source";
+          connectSource(id);
+          setResult({
+            name,
+            signals: learned.discovered.length,
+            from: baseline,
+            to: Math.min(99, baseline + (dataSources.find((s) => s.id === id)?.gain ?? 8)),
+          });
+          toast.success(learned.summary || `Your Twin learned from your ${name} export.`);
+        }}
+        onClose={() => setArchive(null)}
+      />
+
+      <GoogleTwinModal
+        open={googleOpen}
+        stage={googleStage}
+        message={googleMessage}
+        onStage={setGoogleStage}
+        onMessage={setGoogleMessage}
+        onClose={() => setGoogleOpen(false)}
+      />
 
       <ConnectSyncModal
         flow={activeFlow}

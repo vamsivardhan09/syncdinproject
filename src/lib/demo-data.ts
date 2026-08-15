@@ -416,3 +416,47 @@ export const firstRewardBreakdown = [
   { label: "Mentors", count: 3 },
   { label: "Engineers", count: 6 },
 ];
+
+/**
+ * Real data sources a member can teach their Twin with. These are NOT demo
+ * imports: each one either walks the member through the platform's official
+ * data-export process (X, Instagram, LinkedIn) or asks for explicit read-only
+ * Google authorization. Gains mirror IMPORT_GAIN in twin-import.server.ts.
+ */
+export const dataSources = [
+  {
+    id: "x",
+    name: "X",
+    pitch: "Teach your Twin what you post about and follow.",
+    detail: "Request your X archive, then upload it here. We read your profile, posts and interests.",
+    gain: 8,
+    afterMessage: "I understand the topics you talk about publicly now.",
+  },
+  {
+    id: "instagram",
+    name: "Instagram",
+    pitch: "Teach your Twin your interests and creative side.",
+    detail:
+      "Download your Instagram information export and upload it. We read profile details, topics and captions.",
+    gain: 6,
+    afterMessage: "I picked up what you're into outside of work.",
+  },
+  {
+    id: "linkedin_export",
+    name: "LinkedIn",
+    pitch: "Teach your Twin your full career history.",
+    detail:
+      "Request your LinkedIn archive, then upload the ZIP. We read your profile, positions, education, skills and projects.",
+    gain: 16,
+    afterMessage: "Your career is mapped — experience, skills and projects.",
+  },
+  {
+    id: "google",
+    name: "Google",
+    pitch: "Teach your Twin who you already work with.",
+    detail:
+      "A separate read-only authorization for Google Contacts and Calendar. Signing in with Google does not grant this.",
+    gain: 12,
+    afterMessage: "I can see the industries and themes around your real working week.",
+  },
+] as const;

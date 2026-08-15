@@ -9,7 +9,7 @@ import {
 } from "react";
 import type { ReactNode } from "react";
 import { toast } from "sonner";
-import { importSources, trainingSources, twinDimensions } from "@/lib/demo-data";
+import { dataSources, importSources, trainingSources, twinDimensions } from "@/lib/demo-data";
 
 const STORAGE_KEY = "syncdin.twin.v2";
 /** Which account the cached state belongs to — a new account must start clean. */
@@ -214,7 +214,9 @@ export function TwinProvider({ children }: { children: ReactNode }) {
     const imported = importSources.find((s) => s.id === id);
     if (imported) return imported.gain;
     const trained = trainingSources.find((s) => s.id === id);
-    return trained ? trained.gain : 0;
+    if (trained) return trained.gain;
+    const data = dataSources.find((s) => s.id === id);
+    return data ? data.gain : 0;
   }, []);
 
   const intelligence = useMemo(() => {

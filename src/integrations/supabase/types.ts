@@ -353,6 +353,63 @@ export type Database = {
         }
         Relationships: []
       }
+      twin_imports: {
+        Row: {
+          created_at: string
+          file_name: string | null
+          id: string
+          signals: Json
+          source_id: string
+          status: string
+          summary: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          file_name?: string | null
+          id?: string
+          signals?: Json
+          source_id: string
+          status?: string
+          summary?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          file_name?: string | null
+          id?: string
+          signals?: Json
+          source_id?: string
+          status?: string
+          summary?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      twin_oauth_states: {
+        Row: {
+          created_at: string
+          nonce: string
+          provider: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          nonce: string
+          provider: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          nonce?: string
+          provider?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       twin_sources: {
         Row: {
           created_at: string

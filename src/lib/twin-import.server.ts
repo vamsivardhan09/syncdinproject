@@ -8,6 +8,14 @@ import { callGateway, type TwinAnalysis } from "@/lib/twin-analyze.server";
 export const IMPORT_SOURCES = ["x", "instagram", "linkedin_export", "google"] as const;
 export type ImportSourceId = (typeof IMPORT_SOURCES)[number];
 
+/** Intelligence gain per source, mirrored by `dataSources` in demo-data. */
+export const IMPORT_GAIN: Record<ImportSourceId, number> = {
+  x: 8,
+  instagram: 6,
+  linkedin_export: 16,
+  google: 12,
+};
+
 const SOURCE_BRIEF: Record<ImportSourceId, string> = {
   x: "This is an official X (Twitter) data export the person downloaded themselves: account/profile details, their posts, interests and who they follow. Read it for professional signal — what they work on, the topics they post about, the communities they follow.",
   instagram:
@@ -98,7 +106,7 @@ export async function storeTwinImport(options: {
   await supabase
     .from("twin_sources")
     .upsert(
-      { user_id: userId, source_id: source, kind: "import", gain: 12 },
+      { user_id: userId, source_id: source, kind: "import", gain: IMPORT_GAIN[source] },
       { onConflict: "user_id,source_id" },
     );
 }

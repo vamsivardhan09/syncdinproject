@@ -32,6 +32,7 @@ import { Route as AuthenticatedPeopleIdRouteImport } from './routes/_authenticat
 import { Route as AuthLinkedinCompleteRouteImport } from './routes/auth.linkedin.complete'
 import { Route as ApiPublicAuthLinkedinCallbackRouteImport } from './routes/api/public/auth/linkedin/callback'
 import { Route as ApiPublicAuthLinkedinStartRouteImport } from './routes/api/public/auth/linkedin/start'
+import { Route as ApiPublicAuthGoogleTwinCallbackRouteImport } from './routes/api/public/auth/google/twin/callback'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -153,6 +154,12 @@ const ApiPublicAuthLinkedinStartRoute =
     path: '/api/public/auth/linkedin/start',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicAuthGoogleTwinCallbackRoute =
+  ApiPublicAuthGoogleTwinCallbackRouteImport.update({
+    id: '/api/public/auth/google/twin/callback',
+    path: '/api/public/auth/google/twin/callback',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -177,6 +184,7 @@ export interface FileRoutesByFullPath {
   '/networks/': typeof AuthenticatedNetworksIndexRoute
   '/api/public/auth/linkedin/callback': typeof ApiPublicAuthLinkedinCallbackRoute
   '/api/public/auth/linkedin/start': typeof ApiPublicAuthLinkedinStartRoute
+  '/api/public/auth/google/twin/callback': typeof ApiPublicAuthGoogleTwinCallbackRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -200,6 +208,7 @@ export interface FileRoutesByTo {
   '/networks': typeof AuthenticatedNetworksIndexRoute
   '/api/public/auth/linkedin/callback': typeof ApiPublicAuthLinkedinCallbackRoute
   '/api/public/auth/linkedin/start': typeof ApiPublicAuthLinkedinStartRoute
+  '/api/public/auth/google/twin/callback': typeof ApiPublicAuthGoogleTwinCallbackRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -226,6 +235,7 @@ export interface FileRoutesById {
   '/_authenticated/networks/': typeof AuthenticatedNetworksIndexRoute
   '/api/public/auth/linkedin/callback': typeof ApiPublicAuthLinkedinCallbackRoute
   '/api/public/auth/linkedin/start': typeof ApiPublicAuthLinkedinStartRoute
+  '/api/public/auth/google/twin/callback': typeof ApiPublicAuthGoogleTwinCallbackRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -252,6 +262,7 @@ export interface FileRouteTypes {
     | '/networks/'
     | '/api/public/auth/linkedin/callback'
     | '/api/public/auth/linkedin/start'
+    | '/api/public/auth/google/twin/callback'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -275,6 +286,7 @@ export interface FileRouteTypes {
     | '/networks'
     | '/api/public/auth/linkedin/callback'
     | '/api/public/auth/linkedin/start'
+    | '/api/public/auth/google/twin/callback'
   id:
     | '__root__'
     | '/'
@@ -300,6 +312,7 @@ export interface FileRouteTypes {
     | '/_authenticated/networks/'
     | '/api/public/auth/linkedin/callback'
     | '/api/public/auth/linkedin/start'
+    | '/api/public/auth/google/twin/callback'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -313,6 +326,7 @@ export interface RootRouteChildren {
   ApiEmailPreviewRoute: typeof ApiEmailPreviewRoute
   ApiPublicAuthLinkedinCallbackRoute: typeof ApiPublicAuthLinkedinCallbackRoute
   ApiPublicAuthLinkedinStartRoute: typeof ApiPublicAuthLinkedinStartRoute
+  ApiPublicAuthGoogleTwinCallbackRoute: typeof ApiPublicAuthGoogleTwinCallbackRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -478,6 +492,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicAuthLinkedinStartRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/auth/google/twin/callback': {
+      id: '/api/public/auth/google/twin/callback'
+      path: '/api/public/auth/google/twin/callback'
+      fullPath: '/api/public/auth/google/twin/callback'
+      preLoaderRoute: typeof ApiPublicAuthGoogleTwinCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -546,6 +567,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiEmailPreviewRoute: ApiEmailPreviewRoute,
   ApiPublicAuthLinkedinCallbackRoute: ApiPublicAuthLinkedinCallbackRoute,
   ApiPublicAuthLinkedinStartRoute: ApiPublicAuthLinkedinStartRoute,
+  ApiPublicAuthGoogleTwinCallbackRoute: ApiPublicAuthGoogleTwinCallbackRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

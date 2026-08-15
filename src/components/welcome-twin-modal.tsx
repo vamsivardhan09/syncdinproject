@@ -25,34 +25,42 @@ const headlines = [
 ];
 
 /**
- * Full-screen first-run guide. Shown once per account when the Twin has no
- * training signal yet, then remembered in per-user local storage.
+ * Full-screen first-run guide. Shown ONCE per account — only the very first
+ * time an untrained (or very low-intelligence) user lands on the dashboard.
+ * After either button is clicked we stamp `seen` into per-user local storage
+ * and the guide never reappears, even if the Twin stays weak.
  */
 export function WelcomeTwinModal() {
-  const { state } = useTwin();
+  const { state, intelligence } = useTwin();
   const trained = state.connectedSources.length + state.trainedSources.length;
   const [open, setOpen] = useState(false);
-  const [storageKey, setStorageKey] = useState<string | null>(null);
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
     let alive = true;
     void supabase.auth.getUser().then(({ data }) => {
       if (!alive || !data.user) return;
       const key = `syncdin:welcome:${data.user.id}`;
-      setStorageKey(key);
-      if (localStorage.getItem(key) !== "seen") setOpen(true);
+      const seen = localStorage.getItem(key) === "seen";
+      // First time only: untrained, or barely trained below 20% intelligence.
+      if (!seen && (trained === 0 || intelligence < 20)) setOpen(true);
+      setReady(true);
     });
     return () => {
       alive = false;
     };
-  }, []);
+  }, [trained, intelligence]);
 
   function dismiss() {
-    if (storageKey) localStorage.setItem(storageKey, "seen");
+    void supabase.auth.getUser().then(({ data }) => {
+      if (data.user) localStorage.setItem(`syncdin:welcome:${data.user.id}`, "seen");
+    });
     setOpen(false);
   }
 
-  if (trained > 0 && !open) return null;
+  // Never render once we've decided this account has seen the guide, or once
+  // the Twin is meaningfully trained. This is what stops it reappearing.
+  if (!ready || !open || trained > 0) return null;
 
   return (
     <AnimatePresence>

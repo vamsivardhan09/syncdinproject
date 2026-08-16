@@ -60,7 +60,7 @@ export const BRAND_COLOR: Record<Brand, string> = {
 };
 
 /** Per-source inline brand mark. */
-export const BRAND_ICON: Record<Brand, (p: SVGProps<SVGSVGElement>) => React.JSX.Element> = {
+export const BRAND_ICON: Record<Brand, (p: SVGProps<SVGSVGElement>) => JSX.Element> = {
   x: XLogo,
   instagram: InstagramLogo,
   linkedin: LinkedInLogo,

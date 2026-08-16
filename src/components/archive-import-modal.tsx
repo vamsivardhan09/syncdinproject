@@ -77,6 +77,7 @@ const GUIDES: Record<ArchiveSource, Guide> = {
   },
   linkedin: {
     label: "LinkedIn",
+    brand: "linkedin",
     requestUrl: "https://www.linkedin.com/mypreferences/d/download-my-data",
     requestLabel: "Open LinkedIn data export",
     waitNote: "LinkedIn usually emails the larger archive within a few hours.",

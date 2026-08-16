@@ -19,6 +19,7 @@ export type ArchiveStatus = "not_connected" | "waiting" | "processing" | "learne
 
 type Guide = {
   label: string;
+  brand: Brand;
   requestUrl: string;
   requestLabel: string;
   waitNote: string;

@@ -31,6 +31,7 @@ type Guide = {
 const GUIDES: Record<ArchiveSource, Guide> = {
   x: {
     label: "X",
+    brand: "x",
     requestUrl: "https://x.com/settings/download_your_data",
     requestLabel: "Open X data settings",
     waitNote: "X usually emails your archive within 24 hours.",

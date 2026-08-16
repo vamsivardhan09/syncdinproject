@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { readArchive, type ArchiveSource } from "@/lib/twin-archive";
+import { BRAND_COLOR, BRAND_ICON, type Brand } from "@/lib/brand-icons";
 import { importArchiveDigest } from "@/lib/twin-import.functions";
 import { cn } from "@/lib/utils";
 
@@ -18,6 +19,7 @@ export type ArchiveStatus = "not_connected" | "waiting" | "processing" | "learne
 
 type Guide = {
   label: string;
+  brand: Brand;
   requestUrl: string;
   requestLabel: string;
   waitNote: string;
@@ -29,6 +31,7 @@ type Guide = {
 const GUIDES: Record<ArchiveSource, Guide> = {
   x: {
     label: "X",
+    brand: "x",
     requestUrl: "https://x.com/settings/download_your_data",
     requestLabel: "Open X data settings",
     waitNote: "X usually emails your archive within 24 hours.",
@@ -51,6 +54,7 @@ const GUIDES: Record<ArchiveSource, Guide> = {
   },
   instagram: {
     label: "Instagram",
+    brand: "instagram",
     requestUrl: "https://accountscenter.instagram.com/info_and_permissions/dyi/",
     requestLabel: "Open Instagram data export",
     waitNote: "Instagram usually prepares the download within a few hours.",
@@ -73,6 +77,7 @@ const GUIDES: Record<ArchiveSource, Guide> = {
   },
   linkedin: {
     label: "LinkedIn",
+    brand: "linkedin",
     requestUrl: "https://www.linkedin.com/mypreferences/d/download-my-data",
     requestLabel: "Open LinkedIn data export",
     waitNote: "LinkedIn usually emails the larger archive within a few hours.",
@@ -197,8 +202,20 @@ export function ArchiveImportModal({
                   <p className="mt-1 text-sm text-muted-foreground">{step.body}</p>
                   {i === 0 ? (
                     <div className="mt-3 flex flex-wrap gap-2">
-                      <Button asChild variant="outline">
+                      <Button
+                        asChild
+                        variant="outline"
+                        style={{
+                          color: BRAND_COLOR[guide.brand],
+                          borderColor: `${BRAND_COLOR[guide.brand]}55`,
+                          backgroundColor: `${BRAND_COLOR[guide.brand]}14`,
+                        }}
+                      >
                         <a href={guide.requestUrl} target="_blank" rel="noreferrer noopener">
+                          {(() => {
+                            const BrandMark = BRAND_ICON[guide.brand];
+                            return <BrandMark className="size-4" />;
+                          })()}
                           {guide.requestLabel}{" "}
                           <ExternalLink aria-hidden="true" className="size-4" />
                         </a>

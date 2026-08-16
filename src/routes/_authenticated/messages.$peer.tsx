@@ -303,7 +303,7 @@ function Conversation() {
     return () => {
       cancelled = true;
     };
-  }, [userId, state.connectionsMade]);
+  }, [userId, state.connectionsMade, feedVersion]);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });

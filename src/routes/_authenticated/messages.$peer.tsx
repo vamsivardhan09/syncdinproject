@@ -110,6 +110,9 @@ function Conversation() {
 
   // Left-sidebar: recent connections & conversations.
   const [threads, setThreads] = useState<ThreadItem[]>([]);
+  // Bumped whenever a realtime message arrives so the sidebar re-reads previews.
+  const [feedVersion, setFeedVersion] = useState(0);
+
 
   const sourceNames = useMemo(
     () =>
@@ -173,30 +176,67 @@ function Conversation() {
     })();
   }, []);
 
+  const loadThread = useCallback(async () => {
+    if (!userId) return null;
+    let request = supabase
+      .from("messages")
+      .select("id, user_id, recipient_id, peer_slug, sender, body, created_at");
+    if (isRealUserId(peer)) {
+      request = request.or(
+        `and(user_id.eq.${userId},recipient_id.eq.${peer}),and(user_id.eq.${peer},recipient_id.eq.${userId}),and(user_id.eq.${userId},recipient_id.is.null,peer_slug.eq.${peer})`,
+      );
+    } else {
+      request = request.eq("user_id", userId).eq("peer_slug", peer);
+    }
+    const { data } = await request.order("created_at", { ascending: true });
+    return data ?? [];
+  }, [userId, peer]);
+
   useEffect(() => {
     if (!userId) return;
     let cancelled = false;
     setLoading(true);
-    void (async () => {
-      let request = supabase
-        .from("messages")
-        .select("id, user_id, recipient_id, peer_slug, sender, body, created_at");
-      if (isRealUserId(peer)) {
-        request = request.or(
-          `and(user_id.eq.${userId},recipient_id.eq.${peer}),and(user_id.eq.${peer},recipient_id.eq.${userId}),and(user_id.eq.${userId},recipient_id.is.null,peer_slug.eq.${peer})`,
-        );
-      } else {
-        request = request.eq("user_id", userId).eq("peer_slug", peer);
-      }
-      const { data } = await request.order("created_at", { ascending: true });
-      if (cancelled) return;
-      setMessages(data ?? []);
+    const run = async () => {
+      const rows = await loadThread();
+      if (cancelled || !rows) return;
+      setMessages(rows);
       setLoading(false);
-    })();
+    };
+    void run();
+    // Fallback for the rare case realtime can't connect — keeps both sides in sync.
+    const timer = window.setInterval(() => void run(), 10_000);
     return () => {
       cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, [userId, peer, loadThread]);
+
+  // Realtime: a message the other person sends shows up here immediately.
+  useEffect(() => {
+    if (!userId) return;
+    const channel = supabase
+      .channel(`messages-${userId}-${peer}`)
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "messages" },
+        (payload) => {
+          const row = payload.new as Message;
+          const mine = row.user_id === userId;
+          const forMe = row.recipient_id === userId;
+          if (!mine && !forMe) return;
+          const inThread = mine ? (row.recipient_id ?? row.peer_slug) === peer : row.user_id === peer;
+          if (inThread) {
+            setMessages((prev) => (prev.some((m) => m.id === row.id) ? prev : [...prev, row]));
+          }
+          setFeedVersion((v) => v + 1);
+        },
+      )
+      .subscribe();
+    return () => {
+      void supabase.removeChannel(channel);
     };
   }, [userId, peer]);
+
 
   // Build the conversation list for the left sidebar: every thread the user
   // has messaged plus their persisted connections, newest activity first.
@@ -263,7 +303,7 @@ function Conversation() {
     return () => {
       cancelled = true;
     };
-  }, [userId, state.connectionsMade]);
+  }, [userId, state.connectionsMade, feedVersion]);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
@@ -388,11 +428,14 @@ function Conversation() {
       return;
     }
     if (!isRealUserId(peer) && !state.connectionsMade.includes(peer)) void connect(peer);
+    // Real members answer for themselves — never fabricate a reply on their behalf.
+    if (isRealUserId(peer)) return;
     const base = [...transcriptOf(messages), { sender: "user" as const, body }];
     const reply = await twinTurn("peer", base);
     if (reply && autopilot) {
       await twinTurn("user", [...base, { sender: "peer" as const, body: reply }]);
     }
+
   }
 
   async function letTwinsTalk() {

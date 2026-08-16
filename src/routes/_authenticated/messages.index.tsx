@@ -50,10 +50,9 @@ function Inbox() {
 
   useEffect(() => {
     let cancelled = false;
-    void (async () => {
-      const { data: auth } = await supabase.auth.getUser();
-      const me = auth.user?.id;
-      if (!me) return;
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+
+    const load = async (me: string) => {
       const { data } = await supabase
         .from("messages")
         .select("user_id, recipient_id, peer_slug, body, created_at")
@@ -72,11 +71,30 @@ function Inbox() {
       if (!cancelled) {
         setRealThreads(profiles.filter((profile) => profile !== null).map(personFromProfile));
       }
+    };
+
+    void (async () => {
+      const { data: auth } = await supabase.auth.getUser();
+      const me = auth.user?.id;
+      if (!me || cancelled) return;
+      await load(me);
+      // New incoming messages create/refresh a thread without a page refresh.
+      channel = supabase
+        .channel(`inbox-${me}`)
+        .on(
+          "postgres_changes",
+          { event: "INSERT", schema: "public", table: "messages" },
+          () => void load(me),
+        )
+        .subscribe();
     })();
+
     return () => {
       cancelled = true;
+      if (channel) void supabase.removeChannel(channel);
     };
   }, []);
+
 
   return (
     <AppShell>

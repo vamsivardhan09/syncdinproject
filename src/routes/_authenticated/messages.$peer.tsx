@@ -428,11 +428,14 @@ function Conversation() {
       return;
     }
     if (!isRealUserId(peer) && !state.connectionsMade.includes(peer)) void connect(peer);
+    // Real members answer for themselves — never fabricate a reply on their behalf.
+    if (isRealUserId(peer)) return;
     const base = [...transcriptOf(messages), { sender: "user" as const, body }];
     const reply = await twinTurn("peer", base);
     if (reply && autopilot) {
       await twinTurn("user", [...base, { sender: "peer" as const, body: reply }]);
     }
+
   }
 
   async function letTwinsTalk() {

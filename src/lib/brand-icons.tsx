@@ -1,4 +1,4 @@
-import type { SVGProps } from "react";
+import type { JSX, SVGProps } from "react";
 
 /** Inline brand SVG marks — no external icon dependency. */
 
@@ -60,7 +60,7 @@ export const BRAND_COLOR: Record<Brand, string> = {
 };
 
 /** Per-source inline brand mark. */
-export const BRAND_ICON: Record<Brand, (p: SVGProps<SVGSVGElement>) => JSX.Element> = {
+export const BRAND_ICON: Record<Brand, (p: SVGProps<SVGSVGElement>) => React.JSX.Element> = {
   x: XLogo,
   instagram: InstagramLogo,
   linkedin: LinkedInLogo,

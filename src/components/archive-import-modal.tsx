@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { readArchive, type ArchiveSource } from "@/lib/twin-archive";
+import { BRAND_COLOR, BRAND_ICON, type Brand } from "@/lib/brand-icons";
 import { importArchiveDigest } from "@/lib/twin-import.functions";
 import { cn } from "@/lib/utils";
 

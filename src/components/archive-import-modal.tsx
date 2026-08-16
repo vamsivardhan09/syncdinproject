@@ -202,7 +202,15 @@ export function ArchiveImportModal({
                   <p className="mt-1 text-sm text-muted-foreground">{step.body}</p>
                   {i === 0 ? (
                     <div className="mt-3 flex flex-wrap gap-2">
-                      <Button asChild variant="outline" style={{ color: BRAND_COLOR[guide.brand] }}>
+                      <Button
+                        asChild
+                        variant="outline"
+                        style={{
+                          color: BRAND_COLOR[guide.brand],
+                          borderColor: `${BRAND_COLOR[guide.brand]}55`,
+                          backgroundColor: `${BRAND_COLOR[guide.brand]}14`,
+                        }}
+                      >
                         <a href={guide.requestUrl} target="_blank" rel="noreferrer noopener">
                           {(() => {
                             const BrandMark = BRAND_ICON[guide.brand];

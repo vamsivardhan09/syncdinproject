@@ -54,6 +54,7 @@ const GUIDES: Record<ArchiveSource, Guide> = {
   },
   instagram: {
     label: "Instagram",
+    brand: "instagram",
     requestUrl: "https://accountscenter.instagram.com/info_and_permissions/dyi/",
     requestLabel: "Open Instagram data export",
     waitNote: "Instagram usually prepares the download within a few hours.",

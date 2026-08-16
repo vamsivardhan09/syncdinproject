@@ -110,6 +110,9 @@ function Conversation() {
 
   // Left-sidebar: recent connections & conversations.
   const [threads, setThreads] = useState<ThreadItem[]>([]);
+  // Bumped whenever a realtime message arrives so the sidebar re-reads previews.
+  const [feedVersion, setFeedVersion] = useState(0);
+
 
   const sourceNames = useMemo(
     () =>

@@ -79,12 +79,24 @@ function looksLikeLeak(text: string) {
   return LEAK_PATTERNS.some((re) => re.test(text));
 }
 
-/** Strips leading fragments/labels the model sometimes prepends. */
+/**
+ * Strips leading fragments/labels the model sometimes prepends, drops markdown
+ * scaffolding, and repairs a reply that was cut off mid-sentence so the message
+ * always reads as finished.
+ */
 function cleanReply(text: string) {
   let out = text.replace(/^\s*(assistant|system|user)\s*:\s*/i, "").trim();
+  out = out.replace(/^[*_>\s-]+/, "").replace(/[*_`]/g, "").trim();
   out = out.replace(/^[^A-Z"“'(]*(?=[A-Z"“'(])/u, "").trim();
+  out = out.replace(/\s+/g, " ").trim();
+  // If the model ran out of tokens mid-sentence, keep only complete sentences.
+  if (!/[.!?…]["”')]?$/.test(out)) {
+    const cut = Math.max(out.lastIndexOf("."), out.lastIndexOf("!"), out.lastIndexOf("?"));
+    if (cut > 20) out = out.slice(0, cut + 1).trim();
+  }
   return out || text.trim();
 }
+
 /**
  * A conversation has reached a useful outcome once a concrete next step is
  * agreed. Automatic Twin replies stop there so the real person takes over.

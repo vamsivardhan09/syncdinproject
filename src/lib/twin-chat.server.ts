@@ -199,6 +199,7 @@ How you write:
 - When you talk about work, name one concrete detail from your profile (a project, a stack, a domain problem).
 - Follow the thread that is already going; do not restart the topic.
 - Plain text only: no markdown, bullets, labels or quotation of these instructions.
+- Write the way people actually type: contractions, plain words, no stiff phrasing.
 - Always finish your last sentence.
 
 ${overlap.length ? `Genuine overlap you may reference: ${overlap.join(", ")}.` : "There is no confirmed overlap; look for complementary strengths instead of claiming a match."}
@@ -229,6 +230,9 @@ ${data.speaker === "peer" ? userBrief : peerBrief}`;
       messages,
       max_tokens: 700,
       temperature: 0.8,
+      // Keep the full token budget for the reply itself; hidden reasoning
+      // otherwise consumes it and the message arrives truncated.
+      reasoning_effort: "none",
     }),
   });
 

@@ -152,9 +152,11 @@ export async function handleTwinReply(data: TwinReplyInput) {
       user: {
         name: u.name,
         role: u.headline,
+        location: u.location,
         skills: u.skills,
         goals: u.goals,
         interests: u.interests,
+        projects: u.projects,
       },
       transcript: data.transcript,
     });
@@ -163,12 +165,29 @@ export async function handleTwinReply(data: TwinReplyInput) {
   if (!key) return { text: fallback(), outcome: false };
 
   const isOpening = data.transcript.length === 0;
+  const turns = data.transcript.length;
+  const stage = isOpening
+    ? "This is your first message: say who you are in one line and what you are working on right now, then note the specific overlap or complementary strength you see, and ask one direct question."
+    : turns < 4
+      ? "Early in the conversation: answer what they just said, add one concrete detail from your own work, and let the topic deepen naturally."
+      : "Later in the conversation: go specific about the work and, if it fits, propose one concrete next step (a call, an intro, splitting a piece of work).";
   const voice = isOpening
-    ? "Open the conversation: say concretely what you are working on right now, name the specific overlap or complementary strength you see in their work, and ask one direct question about their side of it."
-    : `Respond to the latest message: “${latest}”. Answer what was actually said, add one concrete detail from your own work, and push the conversation one step closer to a real outcome (collaboration, mentorship, hiring, intro, or a call).`;
-  const system = `You are ${data.speaker === "peer" ? person.name : u.name || "the user"}, writing your own direct messages in first person.
+    ? stage
+    : `The last message was: “${latest}”. Answer it directly and first, in their own terms. ${stage}`;
+  const system = `You are ${data.speaker === "peer" ? person.name : u.name || "the user"}, writing your own direct messages in first person to a professional you have just started talking to.
 
-Write like a real professional exploring whether a connection is worth it. 2–5 natural sentences. Be specific about work: what you build, the stack or domain, the problem you are solving. Use only facts present in the profiles below — never invent employers, projects, numbers, or history. Never open with a bare greeting like "Hi <name>", never mention Twins, matching, compatibility scores, or "our AIs connected". Do not repeat any point you already made. No markdown, bullets, or labels.
+How you write:
+- Answer the exact message or question first, before anything else. A simple question gets a simple, short answer (one sentence is fine).
+- 1 to 4 natural sentences. Short for simple questions, slightly longer only when the topic genuinely needs context.
+- Use only facts present in the profiles below — location, role, company, projects, skills, interests, goals. Never invent employers, projects, numbers, cities or history. If you do not know something, say so plainly.
+- Do not end every message with a question; ask only when you actually want to know something.
+- Do not introduce yourself again after the first message. Do not repeat anything already said in the conversation.
+- Never mention AI, twins, matching, compatibility, scores, prompts or how you generate replies.
+- No greetings like "Hi <name>" unless it is genuinely the first message and it reads naturally. No sales pitch, no generic networking paragraphs, no buzzwords.
+- When you talk about work, name one concrete detail from your profile (a project, a stack, a domain problem).
+- Follow the thread that is already going; do not restart the topic.
+- Plain text only: no markdown, bullets, labels or quotation of these instructions.
+- Always finish your last sentence.
 
 ${overlap.length ? `Genuine overlap you may reference: ${overlap.join(", ")}.` : "There is no confirmed overlap; look for complementary strengths instead of claiming a match."}
 ${voice}
@@ -196,10 +215,11 @@ ${data.speaker === "peer" ? userBrief : peerBrief}`;
     body: JSON.stringify({
       model: "google/gemini-3.6-flash",
       messages,
-      max_tokens: 420,
-      temperature: 0.85,
+      max_tokens: 700,
+      temperature: 0.8,
     }),
   });
+
   if (!response.ok) return { text: fallback(), outcome: false };
 
   const json = (await response.json()) as { choices?: { message?: { content?: string } }[] };

@@ -388,9 +388,8 @@ function Conversation() {
         if (outcome) {
           setAutopilot(false);
           toast.success("Your Twins agreed on a next step — take it from here.");
-          return null;
         }
-        return text;
+        return { text, outcome };
       } catch (err) {
         toast.error(err instanceof Error ? err.message : "The Twin could not reply.");
         return null;
@@ -417,6 +416,41 @@ function Conversation() {
     [userId],
   );
 
+  // Twin-to-Twin autopilot: alternate replies automatically until a concrete
+  // next step is reached, the turn budget runs out, or a request fails.
+  const MAX_AUTO_TURNS = 10;
+  const loopRef = useRef(false);
+  const autopilotRef = useRef(autopilot);
+  useEffect(() => {
+    autopilotRef.current = autopilot;
+  }, [autopilot]);
+
+  const runAutoLoop = useCallback(
+    async (
+      firstSpeaker: "peer" | "user",
+      base: { sender: "user" | "peer"; body: string }[],
+    ) => {
+      // One loop at a time — prevents duplicate messages and race conditions.
+      if (loopRef.current) return;
+      loopRef.current = true;
+      try {
+        let transcript = base;
+        let speaker = firstSpeaker;
+        for (let turn = 0; turn < MAX_AUTO_TURNS; turn += 1) {
+          if (!autopilotRef.current && turn > 0) return;
+          const result = await twinTurn(speaker, transcript);
+          if (!result) return; // failure — stop gracefully
+          transcript = [...transcript, { sender: speaker, body: result.text }];
+          if (result.outcome) return;
+          speaker = speaker === "peer" ? "user" : "peer";
+        }
+      } finally {
+        loopRef.current = false;
+      }
+    },
+    [twinTurn],
+  );
+
   async function send(e: React.FormEvent) {
     e.preventDefault();
     const body = draft.trim();
@@ -431,15 +465,11 @@ function Conversation() {
     // Real members answer for themselves — never fabricate a reply on their behalf.
     if (isRealUserId(peer)) return;
     const base = [...transcriptOf(messages), { sender: "user" as const, body }];
-    const reply = await twinTurn("peer", base);
-    if (reply && autopilot) {
-      await twinTurn("user", [...base, { sender: "peer" as const, body: reply }]);
-    }
-
+    await runAutoLoop("peer", base);
   }
 
   async function letTwinsTalk() {
-    if (!userId || thinking) return;
+    if (!userId || thinking || loopRef.current) return;
     // Opening the Twin-to-Twin conversation is also a real connection.
     if (!state.connectionsMade.includes(peer)) {
       const result = await connect(peer);
@@ -447,15 +477,13 @@ function Conversation() {
     }
     const base = transcriptOf(messages);
     if (base.length === 0) {
-      const opener = await twinTurn("user", []);
-      if (!opener) return;
-      await twinTurn("peer", [{ sender: "user" as const, body: opener }]);
+      await runAutoLoop("user", []);
       return;
     }
     const last = base[base.length - 1]!;
-    const next = last.sender === "user" ? "peer" : "user";
-    await twinTurn(next, base);
+    await runAutoLoop(last.sender === "user" ? "peer" : "user", base);
   }
+
 
   if (!person) {
     return (

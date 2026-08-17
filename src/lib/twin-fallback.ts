@@ -1,15 +1,17 @@
 /**
- * Deterministic, context-specific Twin reply used when the AI gateway is
- * unavailable. Never a generic paragraph: it always names real profile facts
- * from both sides so the conversation still reads like the product working.
+ * Deterministic, context-specific reply used when the AI gateway is
+ * unavailable. It never returns a generic paragraph: it answers the actual
+ * question using real stored profile facts from both sides.
  */
 type Side = {
   name: string;
   role?: string;
   company?: string;
+  location?: string;
   skills?: string[];
   goals?: string[];
   interests?: string[];
+  projects?: string[];
 };
 
 function first(name: string) {
@@ -38,43 +40,66 @@ export function fallbackTwinReply(opts: {
 
   const identity = [me.role, me.company].filter(Boolean).join(" at ");
   const focus = me.skills?.slice(0, 2).join(" and ") || me.interests?.[0] || me.goals?.[0];
+  const project = me.projects?.[0];
 
   if (transcript.length === 0) {
     const introduction = identity
-      ? `I'm ${me.name}, ${identity}, and my current focus is ${focus ?? "building useful professional relationships"}.`
-      : `I'm ${me.name}, and I'm focused on ${focus ?? "building useful professional relationships"}.`;
+      ? `I'm ${me.name}, ${identity}, currently spending most of my time on ${project ?? focus ?? "work in this space"}.`
+      : `I'm ${me.name}, currently spending most of my time on ${project ?? focus ?? "work in this space"}.`;
     const relevance = sharedSkills.length
-      ? `We both work on ${sharedSkills.slice(0, 2).join(" and ")}, which is exactly the part I'm pushing on right now.`
+      ? `We overlap on ${sharedSkills.slice(0, 2).join(" and ")}, which is the part I'm pushing hardest on.`
       : sharedInterests.length
-        ? `We seem to care about the same thing in ${sharedInterests.slice(0, 2).join(" and ")}.`
+        ? `Looks like we both care about ${sharedInterests.slice(0, 2).join(" and ")}.`
         : theirSkill
-          ? `Your work in ${theirSkill} covers the side I don't own, which is why I'm reaching out.`
-          : `Your background looks complementary to mine, which is why I'm reaching out directly.`;
+          ? `Your work in ${theirSkill} covers the side I don't own.`
+          : `Your background looks complementary to mine.`;
     const ask = sharedGoal
-      ? `I'm working toward ${sharedGoal} too — what does that look like on your side, and where do you need help?`
-      : `What are you building at the moment, and which part would you rather hand to someone else?`;
-    return `${introduction}\n${relevance} ${ask}`;
+      ? `How are you approaching ${sharedGoal} at the moment?`
+      : `What are you building right now?`;
+    return `${introduction} ${relevance} ${ask}`;
   }
 
   const latest = transcript.at(-1)?.body.trim() ?? "";
-  const lowerLatest = latest.toLowerCase();
-  if (/^(hi|hey|hello|yo)[!.\s]*$/.test(lowerLatest)) {
+  const lower = latest.toLowerCase();
+
+  // Where are you from / based?
+  if (/\b(where.*(from|based|located)|which city|what city|whereabouts)\b/.test(lower)) {
+    return me.location
+      ? `I'm based in ${me.location}${them.location ? ` — you're in ${them.location}, right?` : "."}`
+      : `I move around a fair bit, so nothing fixed at the moment.`;
+  }
+
+  // What are you working on / your project?
+  if (/\b(working on|what.*(project|building)|your project|up to these days)\b/.test(lower)) {
+    if (project) {
+      return focus
+        ? `Right now it's ${project}, mostly on the ${focus} side of it.`
+        : `Right now it's ${project}.`;
+    }
+    return focus
+      ? `Mostly ${focus} at the moment${identity ? `, day to day at ${me.company ?? identity}` : ""}.`
+      : `Nothing I can share in detail yet, but it's close to ${sharedInterests[0] ?? "the work you're doing"}.`;
+  }
+
+  if (/^(hi|hey|hello|yo)[!.\s]*$/.test(lower)) {
     const common = sharedSkills[0] ?? sharedInterests[0];
     return common
-      ? `${themFirst}, the reason I reached out is ${common} — I'm deep in that right now and curious how you're approaching it. What are you building around it?`
-      : `${themFirst}, my current focus is ${focus ?? "this space"}, and I'd like to know what you're working on so we can see whether the two sides fit together.`;
+      ? `${themFirst} — I reached out because of ${common}. How are you approaching it?`
+      : `${themFirst} — right now I'm deep in ${project ?? focus ?? "this space"}. What are you working on?`;
+  }
 
-  }
-  if (/\b(yes|sure|okay|ok|do it|sounds good|let'?s)\b/.test(lowerLatest)) {
+  if (/\b(yes|sure|okay|ok|do it|sounds good|let'?s)\b/.test(lower)) {
     return sharedGoal
-      ? `Great—let’s make it concrete. Since ${sharedGoal} matters to both of us, I’d start by comparing what each of us is working toward and where our experience could complement it.`
-      : `Great—let’s make it concrete. Share the main problem you’re working on right now, and I’ll respond with the most relevant part of my background.`;
+      ? `Works for me. Since ${sharedGoal} matters to both of us, let's compare notes on a call this week.`
+      : `Works for me — send a couple of times that suit you and we'll talk properly.`;
   }
+
   if (latest.includes("?")) {
-    const detail = focus ?? me.goals?.[0] ?? "finding useful professional collaborations";
-    return `From my side, the clearest answer is ${detail}. ${theirSkill ? `Your background in ${theirSkill} could add a useful perspective—how are you applying it today?` : "What part of that is most relevant to you?"}`;
+    const detail = project ?? focus ?? me.goals?.[0] ?? "the work I'm on right now";
+    return `Short answer: ${detail}. ${theirSkill ? `Curious how you handle it with ${theirSkill}.` : ""}`.trim();
   }
+
   return sharedSkills.length
-    ? `That gives me a clearer picture. The strongest connection I see is ${sharedSkills[0]}, so I’d like to compare how each of us approaches it in practice.`
-    : `That helps me understand where you’re coming from. The next useful step is to compare your current priority with my work in ${focus ?? "this area"} and see if there’s a practical fit.`;
+    ? `That tracks. The closest overlap is ${sharedSkills[0]}, and on my side that shows up in ${project ?? focus ?? "the current work"}.`
+    : `Makes sense. On my side the nearest thing is ${project ?? focus ?? "what I'm building now"}.`;
 }

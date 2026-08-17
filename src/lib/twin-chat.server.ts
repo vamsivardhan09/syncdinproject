@@ -237,12 +237,16 @@ ${data.speaker === "peer" ? userBrief : peerBrief}`;
   const json = (await response.json()) as { choices?: { message?: { content?: string } }[] };
   const raw = json.choices?.[0]?.message?.content?.trim();
   const text = raw ? cleanReply(raw) : "";
+  const words = text ? text.split(/\s+/).length : 0;
+  // Short answers are valid ("I'm based in Berlin.") — only reject empties,
+  // leaked scaffolding, or a longer reply that restates an earlier one.
   if (
     !text ||
-    text.split(/\s+/).length < 8 ||
+    words < 3 ||
     looksLikeLeak(text) ||
-    isRepetitive(text, previousForSpeaker)
+    (words > 12 && isRepetitive(text, previousForSpeaker))
   ) {
+
     const fb = fallback();
     return { text: fb, outcome: reachedOutcome(fb, data.transcript.length) };
   }

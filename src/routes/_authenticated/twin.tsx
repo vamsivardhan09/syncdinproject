@@ -320,98 +320,6 @@ function Twin() {
       </AnimatePresence>
 
       <section className="mt-8">
-        <h2 className="text-xl font-bold">Career &amp; project sources</h2>
-        <div className="mt-5 grid gap-4 sm:grid-cols-2">
-          {importSources.map((source) => {
-            const sourceId: string = source.id;
-            const Icon = icons[source.id] ?? Globe;
-            const done = state.connectedSources.includes(source.id);
-
-            return (
-              <motion.article
-                key={source.id}
-                layout
-                className={cn("surface-card p-5", done && "border-primary/40")}
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <span className="flex size-10 items-center justify-center rounded-xl bg-primary-soft text-primary">
-                    <Icon aria-hidden="true" className="size-5" />
-                  </span>
-                  <span className="font-mono text-xs font-semibold text-success">
-                    +{source.gain}%
-                  </span>
-                </div>
-                <h3 className="mt-4 text-base font-bold">{source.name}</h3>
-                <p className="mt-1 text-sm text-muted-foreground">{source.subtitle}</p>
-                {done ? (
-                  <p className="mt-3 text-sm italic text-primary">“{source.afterMessage}”</p>
-                ) : source.id === "resume" ? (
-                  <p className="mt-3 text-sm text-muted-foreground">
-                    Upload a PDF, DOC or text résumé. Your Twin scans it and extracts your
-                    experience, projects, skills and certifications.
-                  </p>
-                ) : source.id === "portfolio" ? (
-                  <p className="mt-3 text-sm text-muted-foreground">
-                    Paste your live site or portfolio URL. Your Twin reads it and scores how much
-                    signal it adds.
-                  </p>
-                ) : sourceId === "github" ? (
-                  <p className="mt-3 text-sm text-muted-foreground">
-                    Paste your GitHub profile URL. Your Twin reads your public repositories,
-                    languages and topics to understand what you actually build.
-                  </p>
-                ) : (
-                  <p className="mt-3 text-sm text-muted-foreground">
-                    Paste your LinkedIn profile URL. Your Twin reads the public profile page and
-                    extracts your headline, skills and focus areas.
-                    <span className="mt-1 block text-xs">
-                      Public profile data only — no credentials, no private data. Where LinkedIn
-                      blocks the page, a clearly-labelled demo import fills in for the prototype.
-                    </span>
-                  </p>
-                )}
-
-
-                <Button
-                  className="mt-4 w-full"
-                  variant={done ? "secondary" : "default"}
-                  disabled={done}
-                  onClick={() => {
-                    if (source.id === "resume") fileInput.current?.click();
-                    else if (source.id === "portfolio") setPortfolioOpen(true);
-                    else if (sourceId === "linkedin" || sourceId === "github") {
-                      setAskValue("");
-                      setUrlAsk(sourceId);
-                    } else startSync(sourceId, "import");
-
-
-
-                  }}
-                >
-                  {done ? (
-                    <>
-                      <Check aria-hidden="true" className="size-4" /> Connected
-                    </>
-                  ) : source.id === "resume" ? (
-                    <>
-                      <Upload aria-hidden="true" className="size-4" /> Upload résumé
-                    </>
-                  ) : source.id === "portfolio" ? (
-                    <>
-                      <Link2 aria-hidden="true" className="size-4" /> Add live demo link
-                    </>
-                  ) : (
-                    `Connect ${source.name}`
-                  )}
-                </Button>
-
-              </motion.article>
-            );
-          })}
-        </div>
-      </section>
-
-      <section className="mt-10">
         <h2 className="text-xl font-bold">Teach it how you think</h2>
         <p className="mt-1 text-sm text-muted-foreground">
           Your assistant already knows how you work. Copy one prompt into it, paste the answer back,
@@ -528,6 +436,98 @@ function Twin() {
                   </div>
                 </div>
               </article>
+            );
+          })}
+        </div>
+      </section>
+
+      <section className="mt-10">
+        <h2 className="text-xl font-bold">Career &amp; project sources</h2>
+        <div className="mt-5 grid gap-4 sm:grid-cols-2">
+          {importSources.map((source) => {
+            const sourceId: string = source.id;
+            const Icon = icons[source.id] ?? Globe;
+            const done = state.connectedSources.includes(source.id);
+
+            return (
+              <motion.article
+                key={source.id}
+                layout
+                className={cn("surface-card p-5", done && "border-primary/40")}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <span className="flex size-10 items-center justify-center rounded-xl bg-primary-soft text-primary">
+                    <Icon aria-hidden="true" className="size-5" />
+                  </span>
+                  <span className="font-mono text-xs font-semibold text-success">
+                    +{source.gain}%
+                  </span>
+                </div>
+                <h3 className="mt-4 text-base font-bold">{source.name}</h3>
+                <p className="mt-1 text-sm text-muted-foreground">{source.subtitle}</p>
+                {done ? (
+                  <p className="mt-3 text-sm italic text-primary">“{source.afterMessage}”</p>
+                ) : source.id === "resume" ? (
+                  <p className="mt-3 text-sm text-muted-foreground">
+                    Upload a PDF, DOC or text résumé. Your Twin scans it and extracts your
+                    experience, projects, skills and certifications.
+                  </p>
+                ) : source.id === "portfolio" ? (
+                  <p className="mt-3 text-sm text-muted-foreground">
+                    Paste your live site or portfolio URL. Your Twin reads it and scores how much
+                    signal it adds.
+                  </p>
+                ) : sourceId === "github" ? (
+                  <p className="mt-3 text-sm text-muted-foreground">
+                    Paste your GitHub profile URL. Your Twin reads your public repositories,
+                    languages and topics to understand what you actually build.
+                  </p>
+                ) : (
+                  <p className="mt-3 text-sm text-muted-foreground">
+                    Paste your LinkedIn profile URL. Your Twin reads the public profile page and
+                    extracts your headline, skills and focus areas.
+                    <span className="mt-1 block text-xs">
+                      Public profile data only — no credentials, no private data. Where LinkedIn
+                      blocks the page, a clearly-labelled demo import fills in for the prototype.
+                    </span>
+                  </p>
+                )}
+
+
+                <Button
+                  className="mt-4 w-full"
+                  variant={done ? "secondary" : "default"}
+                  disabled={done}
+                  onClick={() => {
+                    if (source.id === "resume") fileInput.current?.click();
+                    else if (source.id === "portfolio") setPortfolioOpen(true);
+                    else if (sourceId === "linkedin" || sourceId === "github") {
+                      setAskValue("");
+                      setUrlAsk(sourceId);
+                    } else startSync(sourceId, "import");
+
+
+
+                  }}
+                >
+                  {done ? (
+                    <>
+                      <Check aria-hidden="true" className="size-4" /> Connected
+                    </>
+                  ) : source.id === "resume" ? (
+                    <>
+                      <Upload aria-hidden="true" className="size-4" /> Upload résumé
+                    </>
+                  ) : source.id === "portfolio" ? (
+                    <>
+                      <Link2 aria-hidden="true" className="size-4" /> Add live demo link
+                    </>
+                  ) : (
+                    `Connect ${source.name}`
+                  )}
+                </Button>
+
+              </motion.article>
             );
           })}
         </div>

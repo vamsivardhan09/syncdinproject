@@ -248,10 +248,10 @@ export function NetworkGraph() {
     mapped.map((n) => `${n.latitude.toFixed(1)},${n.longitude.toFixed(1)}`),
   ).size;
 
-  const youPos = toPercent(
-    ((90 - (you.y / 500) * 180) as number),
-    ((you.x / 1000) * 360 - 180) as number,
-  );
+  const youPos = {
+    left: ((you.x - VIEW.x) / VIEW.w) * 100,
+    top: ((you.y - VIEW.y) / VIEW.h) * 100,
+  };
 
   return (
     <section aria-labelledby="network-graph-heading" className="surface-card overflow-hidden">

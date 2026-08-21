@@ -462,7 +462,9 @@ export type Database = {
           id: string
           interests: string[]
           last_active_at: string
+          latitude: number
           location: string
+          longitude: number
           skills: string[]
           twin_intelligence: number
           twin_summary: string
@@ -494,7 +496,9 @@ export type Database = {
           id: string
           interests: string[]
           last_active_at: string
+          latitude: number
           location: string
+          longitude: number
           skills: string[]
           twin_intelligence: number
           twin_summary: string
@@ -523,7 +527,9 @@ export type Database = {
           id: string
           interests: string[]
           last_active_at: string
+          latitude: number
           location: string
+          longitude: number
           skills: string[]
           twin_intelligence: number
           twin_summary: string

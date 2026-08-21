@@ -27,7 +27,11 @@ export type PublicProfile = {
   twin_summary: string | null;
   twin_intelligence: number | null;
   last_active_at: string | null;
+  /** Stored by the member themselves; null when they never shared a position. */
+  latitude?: number | null;
+  longitude?: number | null;
 };
+
 
 export type ConnectionProfile = PublicProfile & { connected_at: string | null };
 

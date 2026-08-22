@@ -669,29 +669,32 @@ function Conversation() {
                   theirs.
                 </div>
               ) : (
-                messages.map((m) => (
-                  <motion.div
-                    key={m.id}
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className={cn(
-                      "flex",
-                      m.user_id === userId && m.sender === "user" ? "justify-end" : "justify-start",
-                    )}
-                  >
-                    <p
-                      className={cn(
-                        "max-w-[80%] whitespace-pre-line break-words rounded-2xl px-4 py-2.5 text-sm leading-relaxed",
-                        m.user_id === userId && m.sender === "user"
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-muted text-foreground",
-                      )}
+                messages.map((m) => {
+                  // Shared threads with real members are keyed on the author;
+                  // demo threads keep the local user/Twin distinction.
+                  const mine = isRealUserId(peer)
+                    ? m.user_id === userId
+                    : m.user_id === userId && m.sender === "user";
+                  return (
+                    <motion.div
+                      key={m.id}
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className={cn("flex", mine ? "justify-end" : "justify-start")}
                     >
-                      {m.body}
-                    </p>
-                  </motion.div>
-                ))
+                      <p
+                        className={cn(
+                          "max-w-[80%] whitespace-pre-line break-words rounded-2xl px-4 py-2.5 text-sm leading-relaxed",
+                          mine ? "bg-primary text-primary-foreground" : "bg-muted text-foreground",
+                        )}
+                      >
+                        {m.body}
+                      </p>
+                    </motion.div>
+                  );
+                })
               )}
+
 
               {thinking ? (
                 <p className="flex items-center gap-2 text-xs text-muted-foreground">

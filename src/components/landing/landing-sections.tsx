@@ -5,7 +5,9 @@ import {
   BrainCircuit,
   Check,
   Globe2,
+  Bell,
   Handshake,
+  LayoutDashboard,
   Lock,
   MessageSquare,
   Radar,
@@ -736,5 +738,87 @@ export function FinalCta() {
         </p>
       </motion.div>
     </Section>
+  );
+}
+
+/* ------------------------------------------------------------------ guided tour for first-time visitors */
+
+const tourStops = [
+  {
+    icon: LayoutDashboard,
+    title: "Dashboard",
+    body: "Your daily briefing: what your Twin did while you were away, who it met and which introductions are waiting for a yes.",
+  },
+  {
+    icon: Radar,
+    title: "Networks & Event Radar",
+    body: "Check into a conference or community, and within seconds you get the top five people there worth meeting — each with the evidence behind the match.",
+  },
+  {
+    icon: Globe2,
+    title: "My Network map",
+    body: "A live world map of the people you are connected to and the Twin matches nearby, so you always know who is in your city.",
+  },
+  {
+    icon: MessageSquare,
+    title: "Messages",
+    body: "Conversations start mid-way. Your Twin has already exchanged context with theirs, so the first message has a reason in it.",
+  },
+  {
+    icon: BrainCircuit,
+    title: "My AI Twin",
+    body: "Upload a resume, import an archive from X, Instagram, LinkedIn or Google, or simply teach it how you think. Every source makes matching sharper.",
+  },
+  {
+    icon: Bell,
+    title: "Notifications & email",
+    body: "Connection requests, acceptances and strong matches reach you in the app and in your inbox — nothing quietly expires.",
+  },
+] as const;
+
+export function TourSection() {
+  return (
+    <div id="tour" className="border-y border-border bg-secondary/40">
+      <Section>
+        <motion.div {...rise} className="max-w-2xl">
+          <Eyebrow>New here?</Eyebrow>
+          <h2 className="mt-4 text-3xl font-extrabold tracking-tight sm:text-4xl">
+            Here is exactly what you get inside SyncdIn.
+          </h2>
+          <p className="mt-4 text-muted-foreground">
+            Six places, one loop: your Twin learns, meets other Twins, and hands you the
+            introductions that are actually worth your time.
+          </p>
+        </motion.div>
+
+        <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {tourStops.map((stop, i) => (
+            <motion.article
+              key={stop.title}
+              {...rise}
+              transition={{ ...rise.transition, delay: i * 0.06 }}
+              className="surface-card p-6 transition-shadow hover:shadow-lift"
+            >
+              <span className="flex size-10 items-center justify-center rounded-xl bg-primary-soft text-primary">
+                <stop.icon aria-hidden="true" className="size-5" />
+              </span>
+              <h3 className="mt-5 text-base font-bold">{stop.title}</h3>
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{stop.body}</p>
+            </motion.article>
+          ))}
+        </div>
+
+        <motion.div {...rise} className="mt-10 flex flex-wrap items-center gap-3">
+          <Button asChild size="lg">
+            <Link to="/signup">
+              Create my Twin <ArrowRight aria-hidden="true" className="size-4" />
+            </Link>
+          </Button>
+          <p className="text-sm text-muted-foreground">
+            Free to start — you see matches before you connect anything.
+          </p>
+        </motion.div>
+      </Section>
+    </div>
   );
 }

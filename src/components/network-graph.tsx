@@ -36,7 +36,12 @@ type GraphItem = {
   longitude: number | null;
 };
 /** A person with real stored coordinates, projected into map space. */
-type MapNode = GraphItem & { x: number; y: number };
+type MapNode = Omit<GraphItem, "latitude" | "longitude"> & {
+  latitude: number;
+  longitude: number;
+  x: number;
+  y: number;
+};
 
 /** Cropped viewport of the 1000x500 equirectangular world (drops the poles). */
 const VIEW = { x: 8, y: 46, w: 984, h: 372 };

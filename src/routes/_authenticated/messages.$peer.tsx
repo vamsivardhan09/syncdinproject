@@ -182,8 +182,10 @@ function Conversation() {
       .from("messages")
       .select("id, user_id, recipient_id, peer_slug, sender, body, created_at");
     if (isRealUserId(peer)) {
+      // Both directions only — a message with no recipient would be visible to
+      // one side only and split the conversation in two.
       request = request.or(
-        `and(user_id.eq.${userId},recipient_id.eq.${peer}),and(user_id.eq.${peer},recipient_id.eq.${userId}),and(user_id.eq.${userId},recipient_id.is.null,peer_slug.eq.${peer})`,
+        `and(user_id.eq.${userId},recipient_id.eq.${peer}),and(user_id.eq.${peer},recipient_id.eq.${userId})`,
       );
     } else {
       request = request.eq("user_id", userId).eq("peer_slug", peer);
@@ -315,8 +317,10 @@ function Conversation() {
       const { data, error } = await supabase
         .from("messages")
         .insert({
+          // For real members every message is addressed to the peer — including
+          // Twin-authored ones — so both accounts read the exact same thread.
           user_id: userId,
-          recipient_id: sender === "user" && isRealUserId(peer) ? peer : null,
+          recipient_id: isRealUserId(peer) ? peer : null,
           peer_slug: peer,
           sender,
           body,
@@ -667,29 +671,32 @@ function Conversation() {
                   theirs.
                 </div>
               ) : (
-                messages.map((m) => (
-                  <motion.div
-                    key={m.id}
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className={cn(
-                      "flex",
-                      m.user_id === userId && m.sender === "user" ? "justify-end" : "justify-start",
-                    )}
-                  >
-                    <p
-                      className={cn(
-                        "max-w-[80%] whitespace-pre-line break-words rounded-2xl px-4 py-2.5 text-sm leading-relaxed",
-                        m.user_id === userId && m.sender === "user"
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-muted text-foreground",
-                      )}
+                messages.map((m) => {
+                  // Shared threads with real members are keyed on the author;
+                  // demo threads keep the local user/Twin distinction.
+                  const mine = isRealUserId(peer)
+                    ? m.user_id === userId
+                    : m.user_id === userId && m.sender === "user";
+                  return (
+                    <motion.div
+                      key={m.id}
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className={cn("flex", mine ? "justify-end" : "justify-start")}
                     >
-                      {m.body}
-                    </p>
-                  </motion.div>
-                ))
+                      <p
+                        className={cn(
+                          "max-w-[80%] whitespace-pre-line break-words rounded-2xl px-4 py-2.5 text-sm leading-relaxed",
+                          mine ? "bg-primary text-primary-foreground" : "bg-muted text-foreground",
+                        )}
+                      >
+                        {m.body}
+                      </p>
+                    </motion.div>
+                  );
+                })
               )}
+
 
               {thinking ? (
                 <p className="flex items-center gap-2 text-xs text-muted-foreground">

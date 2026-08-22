@@ -182,8 +182,10 @@ function Conversation() {
       .from("messages")
       .select("id, user_id, recipient_id, peer_slug, sender, body, created_at");
     if (isRealUserId(peer)) {
+      // Both directions only — a message with no recipient would be visible to
+      // one side only and split the conversation in two.
       request = request.or(
-        `and(user_id.eq.${userId},recipient_id.eq.${peer}),and(user_id.eq.${peer},recipient_id.eq.${userId}),and(user_id.eq.${userId},recipient_id.is.null,peer_slug.eq.${peer})`,
+        `and(user_id.eq.${userId},recipient_id.eq.${peer}),and(user_id.eq.${peer},recipient_id.eq.${userId})`,
       );
     } else {
       request = request.eq("user_id", userId).eq("peer_slug", peer);

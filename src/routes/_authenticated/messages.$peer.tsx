@@ -315,8 +315,10 @@ function Conversation() {
       const { data, error } = await supabase
         .from("messages")
         .insert({
+          // For real members every message is addressed to the peer — including
+          // Twin-authored ones — so both accounts read the exact same thread.
           user_id: userId,
-          recipient_id: sender === "user" && isRealUserId(peer) ? peer : null,
+          recipient_id: isRealUserId(peer) ? peer : null,
           peer_slug: peer,
           sender,
           body,
